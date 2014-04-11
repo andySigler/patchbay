@@ -6,7 +6,7 @@ var host, ws;
 
 function setupWebsockets(){
 	host = location.origin.replace(/^http/, 'ws');
-	//ws = new WebSocket(host);
+	ws = new WebSocket(host);
 
 	ws.onopen = function(){
 		console.log("WebSocket Connection made with "+host);
