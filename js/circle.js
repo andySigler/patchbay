@@ -29,7 +29,7 @@ function Circle(_ctx,_type,scale,thickness){
 	this.arcEndPoints = [];
 
 	this.radiansMoved = 0;
-	this.rotateFeedback = .98;
+	this.rotateFeedback = .95;
 
 	this.padding = Math.PI/200;
 	if(this.type==='out') this.padding*=.5;
@@ -96,7 +96,11 @@ Circle.prototype.drawPorts = function(){
 
 	for(var i=0;i<totalArcs;i++){
 		if(this.arcs[i].isSelected){
-			this.arcs[i].drawPorts();
+			var scaler = this.animPercent;
+			if(this.arcOffset===i){
+				scaler = 1-scaler;
+			}
+			this.arcs[i].drawPorts(scaler);
 		}
 	}
 }
@@ -137,7 +141,7 @@ Circle.prototype.transpose = function(i){
 	if(currentEnd>Math.PI*2) currentEnd = currentEnd%(Math.PI*2);
 	else if(currentEnd<0) currentEnd+=(Math.PI*2);
 
-	var highlightCuttoff = 1/6;
+	var highlightCuttoff = 1/50;
 	if(this.animPercent>=0 && this.animPercent<highlightCuttoff){
 		this.highlighted = {
 			0:true,
@@ -176,7 +180,10 @@ Circle.prototype.mouseEvent = function(mouseX,mouseY){
 		i = Number(i);
 		if(this.highlighted[i]){
 			var arcIndex = (i+this.arcOffset)%this.arcs.length;
-			if(this.arcs[arcIndex].isTouchingPort(mouseX,mouseY)){
+			var scaler = this.animPercent*1.25;
+			if(i==0) scaler = 1-scaler;
+			//scaler = 1;
+			if(this.arcs[arcIndex].isTouchingPort(mouseX,mouseY,scaler)){
 				return false;
 			}
 		}

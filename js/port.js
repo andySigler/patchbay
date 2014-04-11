@@ -21,6 +21,8 @@ function Port(_ctx,_parent,_type,_index){
 	this.touched = false;
 	this.hovered = false;
 
+	this.scaler = 0;
+
 	this.connections = {};
 }
 
@@ -40,24 +42,19 @@ Port.prototype.update = function(rad,size){
 ////////////////////////////////////
 ////////////////////////////////////
 
-Port.prototype.draw = function(){
-	var divider = 2;
-	if(this.touched){
-		divider = 1;
-	}
-	this.ctx.beginPath();
-	this.ctx.arc(0,this.circleRad,this.size/divider,0,Math.PI*2,false);
-	this.ctx.fill();
+Port.prototype.draw = function(scaler){
+	scaler*=1.25;
+	if(scaler>1) scaler = 1;
+	else if(scaler<0) scaler = 0;
 
-	if(this.hovered){
-		this.ctx.save();
-		this.ctx.lineWidth = this.ctx.lineWidth/2;
-		this.ctx.strokeStyle = 'black';
-		this.ctx.beginPath();
-		this.ctx.arc(0,this.circleRad,this.size/(divider*.75),0,Math.PI*2,false);
-		this.ctx.stroke();
-		this.ctx.restore();
-	}
+	this.scaler = scaler;
+
+	var tempSize = this.size*scaler*.5;
+
+	this.ctx.fillStyle = 'white';
+	this.ctx.beginPath();
+	this.ctx.arc(0,this.circleRad,tempSize,0,Math.PI*2,false);
+	this.ctx.fill();
 }
 
 ////////////////////////////////////

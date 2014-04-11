@@ -14,6 +14,35 @@ var hoveredCord = undefined;
 
 var allConnections = {};
 
+var testerColor = {
+	'r':252,
+	'g':120,
+	'b':43
+};
+
+var colorPalette = [
+	{
+		'r':30,
+		'g':147,
+		'b':175
+	},
+	{
+		'r':43,
+		'g':211,
+		'b':252
+	},
+	{
+		'r':79,
+		'g':79,
+		'b':79
+	},
+	{
+		'r':176,
+		'g':176,
+		'b':176
+	}
+];
+
 function setupCanvas(){
 	canvas = document.getElementById('canvas');
 	adjustCanvas();
@@ -27,17 +56,32 @@ function setupCanvas(){
 		event.gesture.preventDefault();
 		var x = event.gesture.center.pageX;
 		var y = event.gesture.center.pageY;
-		mouse.dragEvent(x,y);
-	});
-	hammerTime.on('dragstart doubletap',function(event){
-		event.gesture.preventDefault();
+		mouse.dragEvent(x,y,true);
 		mouse.touchEvent();
 	});
-	hammerTime.on('dragend',function(event){
+	var didDouble = false;
+	hammerTime.on('doubletap',function(event){
 		event.gesture.preventDefault();
 		var x = event.gesture.center.pageX;
 		var y = event.gesture.center.pageY;
-		mouse.releaseEvent(x,y);
+		didDouble = true;
+		mouse.dragEvent(x,y,true);
+		mouse.touchEvent();
+		if(outCircle.touched){
+			//
+		}
+		else if(inCircle.touched){
+			//
+		}
+	});
+	hammerTime.on('dragend release',function(event){
+		event.gesture.preventDefault();
+		var x = event.gesture.center.pageX;
+		var y = event.gesture.center.pageY;
+		if(!didDouble){
+			mouse.releaseEvent(x,y);
+		}
+		else didDouble = false;
 		if(hoveredPort){
 			hoveredPort.hovereed = false;
 			hoveredPort = undefined;
@@ -47,7 +91,7 @@ function setupCanvas(){
 		event.gesture.preventDefault();
 		var x = event.gesture.center.pageX;
 		var y = event.gesture.center.pageY;
-		mouse.dragEvent(x,y);
+		mouse.dragEvent(x,y,false);
 	});
 
 	makeCircles();
@@ -60,22 +104,6 @@ function setupCanvas(){
 function drawLoop(){
 
 	mouse.update();
-
-	if(hoveredPort){
-		var id = 'inNames';
-		if(hoveredPort.parent.type==='out') id = 'outNames';
-		var div = document.getElementById(id);
-		var r = hoveredPort.parent.c.r;
-		var g = hoveredPort.parent.c.g;
-		var b = hoveredPort.parent.c.b;
-		div.style.color = 'rgb('+r+','+g+','+b+')';
-		div.innerHTML = hoveredPort.name;
-		// draw the ports name in the appropriate spot (in or out)
-	}
-	else if(!touchedPort){
-		document.getElementById('outNames').innerHTML = "";
-		document.getElementById('inNames').innerHTML = "";
-	}
 
 	outCircle.update(usedSize);
 	inCircle.update(usedSize);
@@ -100,16 +128,11 @@ function drawLoop(){
 		allConnections[i].draw();
 	}
 
-	if(touchedPort){
-		drawTouchedPort();
-	}
-	else if(!hoveredPort){
-		document.getElementById('outNames').innerHTML = "";
-		document.getElementById('inNames').innerHTML = "";
-	}
-
 	outCircle.drawPorts();
 	inCircle.drawPorts();
+
+	if(touchedPort) drawTouchedPort();
+	if(hoveredPort) drawHoveredPort();
 
 	context.restore();
 
@@ -123,33 +146,58 @@ function drawLoop(){
 ////////////////////////////////////
 
 function drawTouchedPort(){
+
+	// first draw the dot
+	var scaler = touchedPort.scaler;
+	scaler*=1.25;
+	if(scaler>1) scaler = 1;
+	else if(scaler<0) scaler = 0;
+
+	var tempSize = touchedPort.size*scaler*.5;
+
 	context.save();
+
+	context.fillStyle = 'black';
+
+	context.beginPath();
+	context.arc(touchedPort.x-middleX,touchedPort.y-middleY,tempSize*.33,0,Math.PI*2,false);
+
+	context.fill();
+	context.restore();
+
+	// then draw the line
+	context.save();
+
+	context.lineWidth = 3;
+	context.strokeStyle = 'black';
+
 	context.beginPath();
 	context.moveTo(touchedPort.x-middleX,touchedPort.y-middleY);
 	context.lineTo(mouse.x-middleX,mouse.y-middleY);
 
-	context.lineWidth = 3;
-	context.strokeStyle = 'gray';
 	context.stroke();
 	context.restore();
+}
 
-	// draw the ports name in the appropriate spot (in or out)
-	var id = 'inNames';
-	var otherId = 'outNames';
-	if(touchedPort.parent.type==='out'){
-		id = 'outNames';
-		otherId = 'inNames';
-	}
-	var div = document.getElementById(id);
-	var r = touchedPort.parent.c.r;
-	var g = touchedPort.parent.c.g;
-	var b = touchedPort.parent.c.b;
-	div.style.color = 'rgb('+r+','+g+','+b+')';
-	div.innerHTML = touchedPort.name;
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
 
-	if(!hoveredPort){
-		document.getElementById(otherId).innerHTML = '';
-	}
+function drawHoveredPort(){
+	var scaler = hoveredPort.scaler;
+	scaler*=1.25;
+	if(scaler>1) scaler = 1;
+	else if(scaler<0) scaler = 0;
+
+	var tempSize = hoveredPort.size*scaler*1;
+
+	context.save();
+	context.lineWidth = tempSize*.1;
+	context.strokeStyle = 'black';
+	context.beginPath();
+	context.arc(hoveredPort.x-middleX,hoveredPort.y-middleY,tempSize,0,Math.PI*2,false);
+	context.stroke();
+	context.restore();
 }
 
 ////////////////////////////////////
@@ -159,8 +207,10 @@ function drawTouchedPort(){
 function makeCircles(){
 	var tempThickness = .2;
 
-	outCircle = new Circle(context,'out',1,tempThickness);
-	inCircle = new Circle(context,'in',.5,tempThickness);
+	var screenPercentage = 0.9;
+
+	outCircle = new Circle(context,'out',screenPercentage,tempThickness);
+	inCircle = new Circle(context,'in',screenPercentage/2,tempThickness);
 }
 
 ////////////////////////////////////

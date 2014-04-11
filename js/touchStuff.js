@@ -30,11 +30,7 @@ var tester = {
 }
 
 function createTester(){
-    var color = {
-        'r':Math.floor(Math.random()*255),
-        'g':Math.floor(Math.random()*255),
-        'b':Math.floor(Math.random()*255)
-    }
+    var color = testerColor;
     // create a new arc for the Tester
     outCircle.addArc('Tester',color,tester.id);
     inCircle.addArc('Tester',color,tester.id);
@@ -230,9 +226,6 @@ function setupSlidingBar(){
         }
         testerDiv.style.left = Math.floor(testerDiv.custom.xPos*window.innerWidth)+'px';
     }
-
-    moveTesterDiv(0,false);
-    moveTesterDiv(maxRightPos,true);
 }
 
 ////////////////////////////////////////

@@ -31,6 +31,7 @@
 				height:100%;
 				background-color: gray;
 				top:0px;
+				left:90%;
 			}
 			#allSliders{
 				position:relative;
@@ -178,8 +179,6 @@
 		<div id="container">
 			<div id="routerContainer">
 				<canvas id="canvas"></canvas>
-				<span id="inNames" class="nameDisplay"></span>
-				<span id="outNames" class="nameDisplay"></span>
 			</div>
 			<div id="testerContainer">
 				<div id="testerSlideBar">
@@ -220,6 +219,31 @@
 			setupCanvas();
 			setupTouchStuff();
 			setupWebsockets();
+
+			// test nodes for playing with patchbay
+			// create a new arc for the Tester
+			var rand = Math.floor(Math.random()*6)+4;
+			for(var i=0;i<rand;i++){
+				var rColorIndex = i % colorPalette.length;
+				var color = colorPalette[rColorIndex];
+			    outCircle.addArc('thing_'+i,color,i+2);
+			    inCircle.addArc('thing_'+i,color,i+2);
+
+			    var rOutputs = Math.floor(Math.random()*6)+1;
+			    for(var o=0;o<rOutputs;o++){
+			        outCircle.arcs[outCircle.arcs.length-1].addPort(o);
+			        outCircle.arcs[outCircle.arcs.length-1].ports[o].name = 'out_'+i;
+			        outCircle.arcs[outCircle.arcs.length-1].paletteIndex = rColorIndex;
+			    }
+
+			    var rInputs = Math.floor(Math.random()*6)+1;
+			    for(var o=0;o<rInputs;o++){
+			        inCircle.arcs[inCircle.arcs.length-1].addPort(o);
+			        inCircle.arcs[inCircle.arcs.length-1].ports[o].name = 'in_'+i;
+			        inCircle.arcs[inCircle.arcs.length-1].paletteIndex = rColorIndex;
+			    }
+			}
+
 			drawLoop();
 		}
 

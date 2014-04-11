@@ -68,7 +68,7 @@ Mouse.prototype.releaseEvent = function(_x,_y){
 
 	touchedPort = undefined;
 	hoveredPort = undefined;
-	hoveredCort = undefined;
+	hoveredCord = undefined;
 
 	outCircle.touched = false;
 	for(var i=0;i<outCircle.arcs.length;i++){
@@ -119,16 +119,16 @@ Mouse.prototype.makeConnection = function(port1,port2){
 ////////////////////////////////////
 ////////////////////////////////////
 
-Mouse.prototype.dragEvent = function(_x,_y){
+Mouse.prototype.dragEvent = function(_x,_y,initRadians){
 	this.x = _x;
 	this.y = _y;
 
 	if(this.y>middleY) this.topSide = true;
 	else this.topSide = false;
 
-	this.radianPrev = this.radianNew;
-
+	if(!initRadians) this.radianPrev = this.radianNew;
 	this.radianNew = this.radiansFromCenter(this.x,this.y);
+	if(initRadians) this.radianPrev = this.radianNew;
 }
 
 ////////////////////////////////////
@@ -136,7 +136,7 @@ Mouse.prototype.dragEvent = function(_x,_y){
 ////////////////////////////////////
 
 Mouse.prototype.update = function(){
-	this.findHover();
+	if(this.down || touchedPort) this.findHover();
 
 	if(this.down && outCircle.arcs.length>1){
 		var radianDiff = this.radianNew-this.radianPrev;
@@ -163,44 +163,47 @@ Mouse.prototype.findHover = function(){
 	hoveredPort = undefined;
 	hoveredCord = undefined;
 
-	if(outCircle.arcs.length>0){
-		for(var i=0;i<2;i++){
-			if(!hoveredPort && outCircle.highlighted[String(i)]){
-				var index = (i+outCircle.arcOffset)%outCircle.arcs.length;
-				var len = outCircle.arcs[index].ports.length;
-				for(var n=0;n<len;n++){
-					var xDiff = outCircle.arcs[index].ports[n].x-mouse.x;
-					var yDiff = outCircle.arcs[index].ports[n].y-mouse.y;
-					var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
-					if(absDiff<outCircle.arcs[index].ports[n].size/2){
-						hoveredPort = outCircle.arcs[index].ports[n];
-						outCircle.arcs[index].ports[n].hovered = true;
-						break;
-					}
-					else{
-						outCircle.arcs[index].ports[n].hovered = false;
+	if(!outCircle.touched && !inCircle.touched){
+
+		if(outCircle.arcs.length>0 && ((touchedPort&&touchedPort.type=='in')||!touchedPort)){
+			for(var i=0;i<2;i++){
+				if(!hoveredPort && outCircle.highlighted[String(i)]){
+					var index = (i+outCircle.arcOffset)%outCircle.arcs.length;
+					var len = outCircle.arcs[index].ports.length;
+					for(var n=0;n<len;n++){
+						var xDiff = outCircle.arcs[index].ports[n].x-mouse.x;
+						var yDiff = outCircle.arcs[index].ports[n].y-mouse.y;
+						var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
+						if(absDiff<outCircle.arcs[index].ports[n].size*.75){
+							hoveredPort = outCircle.arcs[index].ports[n];
+							outCircle.arcs[index].ports[n].hovered = true;
+							break;
+						}
+						else{
+							outCircle.arcs[index].ports[n].hovered = false;
+						}
 					}
 				}
 			}
 		}
-	}
-	if(!hoveredPort && inCircle.arcs.length>0){
-		//loop through inner seen ports
-		for(var i=0;i<2;i++){
-			if(!hoveredPort && inCircle.highlighted[String(i)]){
-				var index = (i+inCircle.arcOffset)%inCircle.arcs.length;
-				var len = inCircle.arcs[index].ports.length;
-				for(var n=0;n<len;n++){
-					var xDiff = inCircle.arcs[index].ports[n].x-mouse.x;
-					var yDiff = inCircle.arcs[index].ports[n].y-mouse.y;
-					var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
-					if(absDiff<inCircle.arcs[index].ports[n].size/2){
-						hoveredPort = inCircle.arcs[index].ports[n];
-						inCircle.arcs[index].ports[n].hovered = true;
-						break;
-					}
-					else{
-						inCircle.arcs[index].ports[n].hovered = false;
+		if(!hoveredPort && inCircle.arcs.length>0 && ((touchedPort&&touchedPort.type=='out')||!touchedPort)){
+			//loop through inner seen ports
+			for(var i=0;i<2;i++){
+				if(!hoveredPort && inCircle.highlighted[String(i)]){
+					var index = (i+inCircle.arcOffset)%inCircle.arcs.length;
+					var len = inCircle.arcs[index].ports.length;
+					for(var n=0;n<len;n++){
+						var xDiff = inCircle.arcs[index].ports[n].x-mouse.x;
+						var yDiff = inCircle.arcs[index].ports[n].y-mouse.y;
+						var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
+						if(absDiff<inCircle.arcs[index].ports[n].size/2){
+							hoveredPort = inCircle.arcs[index].ports[n];
+							inCircle.arcs[index].ports[n].hovered = true;
+							break;
+						}
+						else{
+							inCircle.arcs[index].ports[n].hovered = false;
+						}
 					}
 				}
 			}
