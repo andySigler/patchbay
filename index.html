@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Patch Circle</title>
+		<title>PatchBay</title>
+		<link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+		<link rel="shortcut icon" href="./images/favicon.ico" type="image/x-icon">
 		<style>
 			html, body{
 				margin: 0px 0px 0px 0px;
@@ -168,7 +170,8 @@
 		<script type="text/javascript" src="./js/hammer.min.js"></script>
 		<script type="text/javascript" src="./js/websocketStuff.js"></script>
 		<script type="text/javascript" src="./js/canvasStuff.js"></script>
-		<script type="text/javascript" src="./js/touchStuff.js"></script>
+		<script type="text/javascript" src="./js/nameStuff.js"></script>
+		<!-- <script type="text/javascript" src="./js/touchStuff.js"></script> -->
 		<script type="text/javascript" src="./js/cord.js"></script>
 		<script type="text/javascript" src="./js/port.js"></script>
 		<script type="text/javascript" src="./js/arc.js"></script>
@@ -180,36 +183,6 @@
 			<div id="routerContainer">
 				<canvas id="canvas"></canvas>
 			</div>
-			<div id="testerContainer">
-				<div id="testerSlideBar">
-					<div id="slideBarText">Tester</div>
-				</div>
-				<div id="allSliders">
-					<div class="sliderDiv">
-						<span class="sliderTitle">#1</span>
-						<input type="range" class="slider" min="0" max="255" step="1" value="0"/>
-						<span class="sliderDisplay">0</span>
-					</div>
-					<div class="sliderDiv">
-						<span class="sliderTitle">#2</span>
-						<input type="range" class="slider" min="0" max="255" step="1" value="0"/>
-						<span class="sliderDisplay">0</span>
-					</div>
-					<div class="sliderDiv">
-						<span class="sliderTitle">#3</span>
-						<input type="range" class="slider" min="0" max="255" step="1" value="0"/>
-						<span class="sliderDisplay">0</span>
-					</div>
-				</div>
-				<div id="allButtons">
-					<button class="buttonFun leftButton">#1</button>
-					<button class="buttonFun middleButton">#2</button>
-					<button class="buttonFun rightButton">#3</button>
-				</div>
-				<div id="allCanvasInputs">
-					<canvas class="canvasInput" id="scrollingCanvas"></canvas>
-				</div>
-			</div>
 			<div id="message">
 			</div>
 		</div>
@@ -217,12 +190,15 @@
 
 		window.onload = function(){
 			setupCanvas();
-			setupTouchStuff();
 			setupWebsockets();
+			makeTestingNodes();
+			drawLoop();
+		}
 
+		function makeTestingNodes(){
 			// test nodes for playing with patchbay
 			// create a new arc for the Tester
-			var rand = Math.floor(Math.random()*6)+4;
+			var rand = Math.floor(Math.random()*12)+5;
 			for(var i=0;i<rand;i++){
 				var rColorIndex = i % colorPalette.length;
 				var color = colorPalette[rColorIndex];
@@ -232,19 +208,17 @@
 			    var rOutputs = Math.floor(Math.random()*6)+1;
 			    for(var o=0;o<rOutputs;o++){
 			        outCircle.arcs[outCircle.arcs.length-1].addPort(o);
-			        outCircle.arcs[outCircle.arcs.length-1].ports[o].name = 'out_'+i;
+			        outCircle.arcs[outCircle.arcs.length-1].ports[o].name = 'out_'+o;
 			        outCircle.arcs[outCircle.arcs.length-1].paletteIndex = rColorIndex;
 			    }
 
 			    var rInputs = Math.floor(Math.random()*6)+1;
 			    for(var o=0;o<rInputs;o++){
 			        inCircle.arcs[inCircle.arcs.length-1].addPort(o);
-			        inCircle.arcs[inCircle.arcs.length-1].ports[o].name = 'in_'+i;
+			        inCircle.arcs[inCircle.arcs.length-1].ports[o].name = 'in_'+o;
 			        inCircle.arcs[inCircle.arcs.length-1].paletteIndex = rColorIndex;
 			    }
 			}
-
-			drawLoop();
 		}
 
 		</script>

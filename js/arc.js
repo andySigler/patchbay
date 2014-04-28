@@ -2,7 +2,7 @@
 ////////////////////////////////////
 ////////////////////////////////////
 
-function Arc(_ctx,_parent,_type,_color,_name,_id){
+function Arc(_ctx,_parent,_type,_color,_name,_id,_index){
 	this.focused = false;
 
 	this.ctx = _ctx;
@@ -10,6 +10,8 @@ function Arc(_ctx,_parent,_type,_color,_name,_id){
 	this.type = _type;
 	this.parent = _parent;
 	this.c = _color;
+
+	this.index = _index;
 
 	this.name = _name;
 	this.id = _id;
@@ -62,8 +64,35 @@ Arc.prototype.handleMeta = function(data){
 ////////////////////////////////////
 
 Arc.prototype.update = function(start,end,radius,portSize,padding,isSelected){
+
 	this.start = start + padding;
 	this.end = end - padding;
+
+	if(this.parent.type==='out'){
+		if(theWidth<theHeight){
+			this.start = (this.start+(Math.PI*1.75))%(Math.PI*2);
+			this.end = (this.end+(Math.PI*1.75))%(Math.PI*2);
+		}
+		else{
+			this.start = (this.start+(Math.PI*.25))%(Math.PI*2);
+			this.end = (this.end+(Math.PI*.25))%(Math.PI*2);
+		}
+	}
+	else{
+		if(theWidth<theHeight){
+			this.start = (this.start+(Math.PI*.75))%(Math.PI*2);
+			this.end = (this.end+(Math.PI*.75))%(Math.PI*2);
+		}
+		else{
+			this.start = (this.start+(Math.PI*1.25))%(Math.PI*2);
+			this.end = (this.end+(Math.PI*1.25))%(Math.PI*2);
+		}
+	}
+	if(theHeight<theWidth){
+		this.start = (this.start+Math.PI*1.5)%(Math.PI*2);
+		this.end = (this.end+Math.PI*1.5)%(Math.PI*2);
+	}
+
 	this.radius = radius;
 	this.portSize = portSize;
 	this.isSelected = isSelected;
@@ -86,13 +115,37 @@ Arc.prototype.update = function(start,end,radius,portSize,padding,isSelected){
 ////////////////////////////////////
 ////////////////////////////////////
 
-Arc.prototype.drawArc = function(){
+Arc.prototype.drawArc = function(parentLineWidth){
 
-	this.ctx.beginPath();
-	this.ctx.arc(0,0,this.radius,this.start,this.end,false);
+	this.ctx.save();
+
 	if(this.isSelected) this.ctx.strokeStyle = 'rgb('+this.c.r+','+this.c.g+','+this.c.b+')';
-	else this.ctx.strokeStyle = 'rgb('+this.c.r+','+this.c.g+','+this.c.b+')';
-	this.ctx.stroke();
+	else this.ctx.strokeStyle = 'rgb(236,236,236)';
+
+	if(this.parent.type==='in'){
+		this.ctx.lineWidth = parentLineWidth*.65;
+
+		// draw a thick arc
+		this.ctx.beginPath();
+		this.ctx.arc(0,0,this.radius,this.start,this.end,false);
+
+		this.ctx.stroke();
+	}
+	else{
+		this.ctx.lineWidth = parentLineWidth*.1;
+		// draw two thin arcs
+		this.ctx.beginPath();
+		this.ctx.arc(0,0,this.radius*.94,this.start,this.end,false);
+
+		this.ctx.stroke();
+
+		this.ctx.beginPath();
+		this.ctx.arc(0,0,this.radius*1.06,this.start,this.end,false);
+
+		this.ctx.stroke();
+	}
+
+	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -100,26 +153,18 @@ Arc.prototype.drawArc = function(){
 ////////////////////////////////////
 
 Arc.prototype.drawName = function(lineWidth){
-	if(this.isSelected){
-		var fontSize = 20;
-		var radDiff = this.end-this.start;
-		if(radDiff<0) radDiff+=(Math.PI*2);
-		var centerRad = this.start+(radDiff/2);
-		var letterRotStep = Math.PI*(.15/this.radius)*fontSize;
-		var nameRadSize = letterRotStep*this.name.length;
 
-		var mult = -1;
+	this.ctx.save();
 
-		this.ctx.save();
-		this.ctx.rotate(centerRad-((Math.PI/2)*mult)-((nameRadSize/2)*mult)); // because arcs start at the right
-		this.ctx.fillStyle = 'rgb('+this.c.r+','+this.c.g+','+this.c.b+')';
-		this.ctx.font = fontSize+'px Helvetica';
-		for(var i=this.name.length-1;i>=0;i--){
-			this.ctx.fillText(this.name.charAt(i),0,(this.radius+lineWidth+(fontSize/2*mult))*mult);
-			this.ctx.rotate(letterRotStep*mult);
+	this.ctx.rotate(this.start+(this.rotStep/2));
+
+	for(var i=0;i<this.ports.length;i++){
+		if(this.ports[i]){
+			this.ports[i].drawName(lineWidth);
+			this.ctx.rotate(this.rotStep);
 		}
-		this.ctx.restore();
 	}
+	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -147,12 +192,9 @@ Arc.prototype.drawPorts = function(scaler){
 	this.ctx.save();
 
 	this.ctx.rotate(this.start+(this.rotStep/2)-(Math.PI*.5));
-	// var c = (this.paletteIndex+1)%colorPalette.length;
-	// this.ctx.fillStyle = 'rgb('+(c.r)+','+(this.c.g)+','+(this.c.b)+')';
 
 	for(var i=0;i<this.ports.length;i++){
 		if(this.ports[i]){
-			this.ports[i].radLocation = this.start+(this.rotStep*i)+(this.rotStep/2);
 			this.ports[i].draw(scaler);
 			this.ctx.rotate(this.rotStep);
 		}
@@ -171,7 +213,7 @@ Arc.prototype.isTouchingPort = function(x,y,scaler){
 			var xDiff = this.ports[i].x-x;
 			var yDiff = this.ports[i].y-y;
 			var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
-			if(absDiff<this.ports[i].size*1*scaler){
+			if(absDiff<this.ports[i].size*.5*scaler){
 				this.ports[i].touched = true;
 				touchedPort = this.ports[i];
 				return true;

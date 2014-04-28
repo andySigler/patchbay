@@ -7,14 +7,13 @@ var host, ws;
 function setupWebsockets(){
 	host = location.origin.replace(/^http/, 'ws');
 	ws = new WebSocket(host);
-
 	ws.onopen = function(){
 		console.log("WebSocket Connection made with "+host);
 	}
 
 	ws.onmessage = function(data){
 		var msg = JSON.parse(data.data);
-		wsHandlers[msg.type](msg.packet);
+		//wsHandlers[msg.type](msg.packet);
 	}
 }
 
@@ -31,7 +30,7 @@ var wsHandlers = {
 	}
 };
 
-function sendRoute(receiveID,senderID,outputIndex,inputIndex){
+function sendRoute(receiveID,senderID,inputIndex,outputIndex){
 	var msg = {
 		'type':'route',
 		'data':{
@@ -41,18 +40,8 @@ function sendRoute(receiveID,senderID,outputIndex,inputIndex){
 			'outputIndex':Number(outputIndex)
 		}
 	};
-	ws.send(JSON.stringify(msg));
-}
-
-function sendTesterOutput(outputIndex,outputValue){
-	var msg = {
-		'type':'testerOutput',
-		'data':{
-			'index':Number(outputIndex),
-			'value':Number(outputValue)
-		}
-	};
-	ws.send(JSON.stringify(msg));
+	//ws.send(JSON.stringify(msg));
+	testConnectionExistence(receiveID,senderID,inputIndex,outputIndex); // for while in GUI debugging
 }
 
 function updateConnections(router,testerStuff){
@@ -65,25 +54,14 @@ function updateConnections(router,testerStuff){
 		for(var n in router[i]){
 			for(var b=0;b<router[i][n].length;b++){
 				if(router[i][n][b]!=99 && router[i][n][b]!=""){
-					var inputArcID = Number(i);
-					var outputArcID = Number(n);
-					if(outputArcID==0) outputArcID = inputArcID;
-					var outIndex = Number(b);
-					var inIndex = Number(router[i][n][b]);
-					testConnectionExistence(outputArcID,inputArcID,outIndex,inIndex);
+					var outputArcID = Number(i);
+					var inputArcID = Number(n);
+					if(inputArcID==0) inputArcID = outputArcID;
+					var inIndex = Number(b);
+					var outIndex = Number(router[i][n][b]);
+					testConnectionExistence(outputArcID,inputArcID,inIndex,outIndex);
 				}
 			}
-		}
-	}
-
-	for(var t in testerStuff.inPorts){
-		for(var r in testerStuff.inPorts[t]){
-			testConnectionExistence(r,-1,testerStuff.inPorts[t][r],t);
-		}
-	}
-	for(var t in testerStuff.outPorts){
-		for(var r in testerStuff.outPorts[t]){
-			testConnectionExistence(-1,r,t,testerStuff.outPorts[t][r]);
 		}
 	}
 
@@ -94,9 +72,9 @@ function updateConnections(router,testerStuff){
 	}
 }
 
-function testConnectionExistence(outputID,inputID,outputIndex,inputIndex){
-	var tempName = Number(outputID)+'/'+Number(inputID)+'__'+Number(outputIndex)+'/'+Number(inputIndex);
-
+function testConnectionExistence(outputID,inputID,inputIndex,outputIndex){
+	var tempName = Number(outputID)+'/'+Number(inputID)+'__'+Number(inputIndex)+'/'+Number(outputIndex);
+	console.log(tempName);
 	if(!allConnections[tempName]){
 		var outPort = undefined;
 		var inPort = undefined;
@@ -108,6 +86,7 @@ function testConnectionExistence(outputID,inputID,outputIndex,inputIndex){
 				inPort = inCircle.arcs[h].ports[inputIndex];
 			}
 			if(outPort && inPort){
+				console.log(outPort.parent.name);
 				allConnections[tempName] = new Cord(context,outPort,inPort,tempName);
 				break;
 			}

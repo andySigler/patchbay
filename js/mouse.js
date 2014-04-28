@@ -5,10 +5,15 @@
 function Mouse() {
 	this.x = undefined;
 	this.y = undefined;
+	this.xDiff = undefined;
+	this.yDiff = undefined;
 	this.down = false;
-	this.radianDiff = undefined;
-	this.radianPrev = undefined;
-	this.radianNew = undefined;
+	this.in_radianDiff = undefined;
+	this.in_radianPrev = undefined;
+	this.in_radianNew = undefined;
+	this.out_radianDiff = undefined;
+	this.out_radianPrev = undefined;
+	this.out_radianNew = undefined;
 	this.topSide = false;
 }
 
@@ -20,34 +25,50 @@ Mouse.prototype.touchEvent = function(){
 
 	this.down = true;
 
+	this.xDiff = 0;
+	this.yDiff = 0;
+
 	if(hoveredCord){
 		var name = hoveredCord.name;
 		if(allConnections[name]){
 			var c = allConnections[name];
 			// sendRoute(receiveID,routeID,outputIndex,inputIndex)
-			var receiverID = c.inPort.parent.id;
-			var routerID = c.outPort.parent.id;
-			sendRoute(receiverID,routerID,c.outPort.index,99);
+			var receiverID = c.outPort.parent.id;
+			var routerID = c.inPort.parent.id;
+			sendRoute(receiverID,routerID,c.inPort.index,99);
 		}
 	}
 
-	var xDist = Math.abs(middleX-this.x);
-	var yDist = Math.abs(middleY-this.y);
-
-	var outWidth = (outCircle.lineWidth*usedSize);
-	var inWidth = (inCircle.lineWidth*usedSize);
-
-	var distFromCenter = Math.sqrt(xDist*xDist+yDist*yDist);
-	var outOuterRad = (outCircle.radiusPercentage*usedSize)+outCircle.lineWidth;
-	var outInnerRad = (outCircle.radiusPercentage*usedSize)-outCircle.lineWidth;
-	var inOuterRad = (inCircle.radiusPercentage*usedSize)+inCircle.lineWidth;
-	var inInnerRad = (inCircle.radiusPercentage*usedSize)-inCircle.lineWidth;
-
-	if(distFromCenter<=outOuterRad && distFromCenter>=outInnerRad){
-		outCircle.touched = outCircle.mouseEvent(this.x,this.y);
+	else if(this.x>inNameBlock.x&&this.x<inNameBlock.x+inNameBlock.width&&this.y>inNameBlock.y&&this.y<inNameBlock.y+inNameBlock.height){
+		// it's in the inNameBlock
+		inNameBlock.touched = true;
 	}
-	else if(distFromCenter<=inOuterRad && distFromCenter>=inInnerRad){
-		inCircle.touched = inCircle.mouseEvent(this.x,this.y);
+	else if(this.x>outNameBlock.x&&this.x<outNameBlock.x+outNameBlock.width&&this.y>outNameBlock.y&&this.y<outNameBlock.y+outNameBlock.height){
+		// it's in the outNameBlock
+		outNameBlock.touched = true;
+	}
+	else{
+		var in_xDist = Math.abs(inCircle.centerX-this.x);
+		var in_yDist = Math.abs(inCircle.centerY-this.y);
+		var out_xDist = Math.abs(outCircle.centerX-this.x);
+		var out_yDist = Math.abs(outCircle.centerY-this.y);
+
+		var outWidth = (outCircle.lineWidth*usedSize);
+		var inWidth = (inCircle.lineWidth*usedSize);
+
+		var in_distFromCenter = Math.sqrt(in_xDist*in_xDist+in_yDist*in_yDist);
+		var out_distFromCenter = Math.sqrt(out_xDist*out_xDist+out_yDist*out_yDist);
+		var outOuterRad = (outCircle.radiusPercentage*usedSize)+outCircle.lineWidth;
+		var outInnerRad = (outCircle.radiusPercentage*usedSize)-outCircle.lineWidth;
+		var inOuterRad = (inCircle.radiusPercentage*usedSize)+inCircle.lineWidth;
+		var inInnerRad = (inCircle.radiusPercentage*usedSize)-inCircle.lineWidth;
+
+		if(out_distFromCenter<=outOuterRad && out_distFromCenter>=outInnerRad){
+			outCircle.touched = outCircle.mouseEvent(this.x,this.y);
+		}
+		else if(in_distFromCenter<=inOuterRad && in_distFromCenter>=inInnerRad){
+			inCircle.touched = inCircle.mouseEvent(this.x,this.y);
+		}
 	}
 }
 
@@ -56,11 +77,18 @@ Mouse.prototype.touchEvent = function(){
 ////////////////////////////////////
 
 Mouse.prototype.releaseEvent = function(_x,_y){
+	if(this.x&&this.y){
+		this.xDiff = _x-this.x;
+		this.yDiff = _y-this.y;
+	}
 	this.x = _x;
 	this.y = _y;
 	this.down = false;
 	this.radianDown = undefined;
 	this.radianDiff = undefined;
+
+	inNameBlock.touched = false;
+	outNameBlock.touched = false;
 
 	if(touchedPort && hoveredPort && hoveredPort!=touchedPort){
 		this.makeConnection(hoveredPort,touchedPort);
@@ -106,12 +134,12 @@ Mouse.prototype.makeConnection = function(port1,port2){
 	}
 
 	// var tempName = outputArcID+'-'+inputArcID+'__'+outIndex+'-'+inIndex;
-	var tempName = String(outPort.parent.id+'/'+inPort.parent.id+'__'+outPort.index+'/'+inPort.index);
+	var tempName = String(outPort.parent.id+'/'+inPort.parent.id+'__'+inPort.index+'/'+outPort.index);
 
 	if(!allConnections[tempName]){
-		var receiverID = inPort.parent.id;
-		var senderID = outPort.parent.id;
-		sendRoute(receiverID,senderID,outPort.index,inPort.index);
+		var receiverID = outPort.parent.id;
+		var senderID = inPort.parent.id;
+		sendRoute(receiverID,senderID,inPort.index,outPort.index);
 	}
 }
 
@@ -120,15 +148,26 @@ Mouse.prototype.makeConnection = function(port1,port2){
 ////////////////////////////////////
 
 Mouse.prototype.dragEvent = function(_x,_y,initRadians){
+	if(this.x&&this.y){
+		this.xDiff = _x-this.x;
+		this.yDiff = _y-this.y;
+	}
 	this.x = _x;
 	this.y = _y;
 
 	if(this.y>middleY) this.topSide = true;
 	else this.topSide = false;
 
-	if(!initRadians) this.radianPrev = this.radianNew;
-	this.radianNew = this.radiansFromCenter(this.x,this.y);
-	if(initRadians) this.radianPrev = this.radianNew;
+	if(!initRadians){
+		this.in_radianPrev = this.in_radianNew;
+		this.out_radianPrev = this.out_radianNew;
+	}
+	this.in_radianNew = this.radiansFromCenter(this.x,this.y,'in');
+	this.out_radianNew = this.radiansFromCenter(this.x,this.y,'out');
+	if(initRadians){
+		this.in_radianPrev = this.in_radianNew;
+		this.out_radianPrev = this.out_radianNew;
+	}
 }
 
 ////////////////////////////////////
@@ -136,20 +175,46 @@ Mouse.prototype.dragEvent = function(_x,_y,initRadians){
 ////////////////////////////////////
 
 Mouse.prototype.update = function(){
+	var blockSpeed = 0.002;
 	if(this.down || touchedPort) this.findHover();
 
 	if(this.down && outCircle.arcs.length>1){
-		var radianDiff = this.radianNew-this.radianPrev;
+		var in_radianDiff = this.in_radianNew-this.in_radianPrev;
+		var out_radianDiff = this.out_radianNew-this.out_radianPrev;
 
 		if(outCircle.touched){
-			outCircle.radiansMoved = radianDiff;
+			outCircle.radiansMoved = out_radianDiff;
 		}
 		else if(inCircle.touched){
-			inCircle.radiansMoved = radianDiff;
+			inCircle.radiansMoved = in_radianDiff;
+		}
+		else if(inNameBlock.touched){
+			if(theHeight>theWidth){
+				if(in_radianDiff!=0) inCircle.radiansMoved -= (this.xDiff*blockSpeed);
+				//else inCircle.radiansMoved = 0;
+			}
+			else{
+				if(in_radianDiff!=0) inCircle.radiansMoved += (this.yDiff*blockSpeed);
+				//else inCircle.radiansMoved = 0;
+			}
+		}
+		else if(outNameBlock.touched){
+			if(theHeight>theWidth){
+				if(out_radianDiff!=0) outCircle.radiansMoved += (this.xDiff*blockSpeed);
+				//else outCircle.radiansMoved = 0;
+			}
+			else{
+				if(out_radianDiff!=0) outCircle.radiansMoved -= (this.yDiff*blockSpeed);
+				//else outCircle.radiansMoved = 0;
+			}
 		}
 	}
 
-	this.radianPrev = this.radianNew;
+	this.xDiff = 0;
+	this.yDiff = 0;
+
+	this.in_radianPrev = this.in_radianNew;
+	this.out_radianPrev = this.out_radianNew;
 }
 
 ////////////////////////////////////
@@ -251,17 +316,25 @@ Mouse.prototype.findHover = function(){
 ////////////////////////////////////
 ////////////////////////////////////
 
-Mouse.prototype.radiansFromCenter = function(x,y){
+Mouse.prototype.radiansFromCenter = function(x,y,which){
 	var radFromCenter;
-	var yDist = Math.abs(middleY-y);
-	var xDist = Math.abs(middleX-x);
 
-	if(x>middleX){
-		if(y>middleY){
+	var _middleX = outCircle.centerX;
+	var _middleY = outCircle.centerY;
+	if(which==='in'){
+		_middleX = inCircle.centerX;
+		_middleY = inCircle.centerY;
+	}
+
+	var yDist = Math.abs(_middleY-y);
+	var xDist = Math.abs(_middleX-x);
+
+	if(x>_middleX){
+		if(y>_middleY){
 			// bottom right
 			radFromCenter = Math.atan(yDist/xDist);
 		}
-		else if(y<middleY){
+		else if(y<_middleY){
 			// top right
 			radFromCenter = Math.atan(xDist/yDist) + (Math.PI*1.5);
 		}
@@ -270,12 +343,12 @@ Mouse.prototype.radiansFromCenter = function(x,y){
 			radFromCenter = 0;
 		}
 	}
-	else if(x<middleX){
-		if(y>middleY){
+	else if(x<_middleX){
+		if(y>_middleY){
 			// bottom left
 			radFromCenter = Math.atan(xDist/yDist) + (Math.PI*.5);
 		}
-		else if(y<middleY){
+		else if(y<_middleY){
 			// top left
 			radFromCenter = Math.atan(yDist/xDist) + Math.PI;
 		}
@@ -286,10 +359,10 @@ Mouse.prototype.radiansFromCenter = function(x,y){
 	}
 	else{
 		//we're touching the x line
-		if(y>middleY){
+		if(y>_middleY){
 			radFromCenter = Math.PI*.5;
 		}
-		else if(y<middleY){
+		else if(y<_middleY){
 			radFromCenter = Math.PI*1.5;
 		}
 		else{

@@ -29,9 +29,9 @@ function Circle(_ctx,_type,scale,thickness){
 	this.arcEndPoints = [];
 
 	this.radiansMoved = 0;
-	this.rotateFeedback = .95;
+	this.rotateFeedback = .85;
 
-	this.padding = Math.PI/200;
+	this.padding = Math.PI/100;
 	if(this.type==='out') this.padding*=.5;
 	this.lineWidth;
 }
@@ -65,13 +65,21 @@ Circle.prototype.update = function(screenSize){
 ////////////////////////////////////
 
 Circle.prototype.drawArcs = function(){
-	this.ctx.lineWidth = this.lineWidth;
+	this.ctx.save();
+	this.ctx.translate(this.centerX,this.centerY);
+
+	var fontSize = Math.floor(usedSize*.1);
+	this.ctx.font = fontSize+'px Helvetica';
+	this.ctx.textAlign = 'center';
+	this.ctx.fillText(this.type.toUpperCase(),0,0);
 
 	var totalArcs = this.arcs.length;
 
 	for(var i=0;i<totalArcs;i++){
-		this.arcs[i].drawArc();
+		this.arcs[i].drawArc(this.lineWidth);
 	}
+
+	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -79,11 +87,25 @@ Circle.prototype.drawArcs = function(){
 ////////////////////////////////////
 
 Circle.prototype.drawNames = function(){
-	var totalArcs = this.arcs.length;
+	this.ctx.save();
+	this.ctx.translate(this.centerX,this.centerY);
+	if(!touchedPort || (touchedPort&&touchedPort.type!=this.type)){
+		var totalArcs = this.arcs.length;
 
-	for(var i=0;i<totalArcs;i++){
-		this.arcs[i].drawName(this.lineWidth);
+		for(var i=0;i<totalArcs;i++){
+			if(this.arcs[i].isSelected){
+				this.arcs[i].drawName(this.lineWidth);
+			}
+		}
 	}
+	else{
+		this.ctx.save();
+		this.ctx.rotate(touchedPort.parent.start+(touchedPort.parent.rotStep/2));
+		this.ctx.rotate(touchedPort.parent.rotStep*touchedPort.index);
+		touchedPort.drawName(this.lineWidth);
+		this.ctx.restore();
+	}
+	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -91,18 +113,36 @@ Circle.prototype.drawNames = function(){
 ////////////////////////////////////
 
 Circle.prototype.drawPorts = function(){
+	this.ctx.save();
+	this.ctx.translate(this.centerX,this.centerY);
+	if(!touchedPort || (touchedPort&&touchedPort.type!=this.type)){
 
-	var totalArcs = this.arcs.length;
+		var totalArcs = this.arcs.length;
 
-	for(var i=0;i<totalArcs;i++){
-		if(this.arcs[i].isSelected){
-			var scaler = this.animPercent;
-			if(this.arcOffset===i){
-				scaler = 1-scaler;
+		for(var i=0;i<totalArcs;i++){
+			if(this.arcs[i].isSelected){
+				var scaler = this.animPercent;
+				if(this.arcOffset===i){
+					scaler = 1-scaler;
+				}
+				this.arcs[i].drawPorts(scaler);
 			}
-			this.arcs[i].drawPorts(scaler);
 		}
 	}
+	else{
+		this.ctx.save();
+		this.ctx.rotate(touchedPort.parent.start+(touchedPort.parent.rotStep/2)-(Math.PI*.5));
+		this.ctx.rotate(touchedPort.parent.rotStep*touchedPort.index);
+
+		var scaler = this.animPercent;
+		if(this.arcOffset===touchedPort.parent.index){
+			scaler = 1-scaler;
+		}
+
+		touchedPort.draw(scaler);
+		this.ctx.restore();
+	}
+	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -197,7 +237,12 @@ Circle.prototype.mouseEvent = function(mouseX,mouseY){
 
 Circle.prototype.rotateDrag = function(){
 
-	if(!this.touched) this.radiansMoved *= this.rotateFeedback;
+	if(this.radiansMoved>Math.PI/2) this.radiansMoved = (Math.PI-(this.radiansMoved%Math.PI))*-1;
+	if(this.radiansMoved<-Math.PI/2) this.radiansMoved = (Math.PI-(Math.abs(this.radiansMoved)%Math.PI));
+
+	if(!this.touched){
+		this.radiansMoved *= this.rotateFeedback;
+	}
 
 	var relativeMovement = this.radiansMoved/(Math.PI*2);
 	if(relativeMovement>.5) relativeMovement = 1-(relativeMovement%1);
@@ -232,7 +277,7 @@ Circle.prototype.rotateDrag = function(){
 ////////////////////////////////////
 
 Circle.prototype.addArc = function(name,color,id){
-	var tempArc = new Arc(this.ctx,this,this.type,color,name,id);
+	var tempArc = new Arc(this.ctx,this,this.type,color,name,id,this.arcs.length);
 	this.arcs.push(tempArc);
 	this.updateDimensionStuff();
 }

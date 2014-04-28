@@ -1,4 +1,4 @@
-////////////////////////////////////
+
 ////////////////////////////////////
 ////////////////////////////////////
 
@@ -14,11 +14,7 @@ var hoveredCord = undefined;
 
 var allConnections = {};
 
-var testerColor = {
-	'r':252,
-	'g':120,
-	'b':43
-};
+var inNameBlock,outNameBlock;
 
 var colorPalette = [
 	{
@@ -40,6 +36,11 @@ var colorPalette = [
 		'r':176,
 		'g':176,
 		'b':176
+	},
+	{
+		'r':252,
+		'g':120,
+		'b':43
 	}
 ];
 
@@ -49,6 +50,10 @@ function setupCanvas(){
 	context = canvas.getContext('2d');
 
 	mouse = new Mouse();
+
+	document.addEventListener("touchmove", function(e){
+        if(e.srcElement.className!='slider') e.preventDefault();
+    }, false);
 
 	var hammerTime = Hammer(canvas);
 
@@ -95,6 +100,12 @@ function setupCanvas(){
 	});
 
 	makeCircles();
+	adjustCanvas();
+
+	inNameBlock = new NameBlock(context,inCircle);
+	outNameBlock = new NameBlock(context,outCircle);
+
+	adjustCanvas();
 }
 
 ////////////////////////////////////
@@ -102,6 +113,9 @@ function setupCanvas(){
 ////////////////////////////////////
 
 function drawLoop(){
+
+	inNameBlock.update();
+	outNameBlock.update();
 
 	mouse.update();
 
@@ -113,10 +127,13 @@ function drawLoop(){
 	}
 
 	// drawing stuff
-	context.clearRect(0,0,theWidth,theHeight);
+	context.clearRect(0,0,canvas.width,canvas.height);
 	context.save();
 
-	context.translate(theWidth*.45,theHeight*.5);
+	inNameBlock.draw();
+	outNameBlock.draw();
+
+	//drawCircleLabels();
 
 	outCircle.drawArcs();
 	inCircle.drawArcs();
@@ -124,21 +141,39 @@ function drawLoop(){
 	outCircle.drawNames();
 	inCircle.drawNames();
 
+	outCircle.drawPorts();
+	inCircle.drawPorts();
+
 	for(var i in allConnections){
 		allConnections[i].draw();
 	}
 
-	outCircle.drawPorts();
-	inCircle.drawPorts();
-
 	if(touchedPort) drawTouchedPort();
 	if(hoveredPort) drawHoveredPort();
-
-	context.restore();
 
 	//drawScroller();
 
 	requestAnimFrame(drawLoop);
+}
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+
+function drawCircleLabels(){
+	context.save();
+
+	context.font = '30px Helvetica';
+	context.fillStyle = 'black';
+	context.textAlign = 'center';
+	context.fillText('inputs',0,-inCircle.radiusPercentage*usedSize*.6);
+
+	context.font = '30px Helvetica';
+	context.fillStyle = 'black';
+	context.textAlign = 'center';
+	context.fillText('outputs',0,outCircle.radiusPercentage*usedSize*.85);
+
+	context.restore();
 }
 
 ////////////////////////////////////
@@ -160,9 +195,20 @@ function drawTouchedPort(){
 	context.fillStyle = 'black';
 
 	context.beginPath();
-	context.arc(touchedPort.x-middleX,touchedPort.y-middleY,tempSize*.33,0,Math.PI*2,false);
+	context.arc(touchedPort.x,touchedPort.y,tempSize*.33,0,Math.PI*2,false);
 
 	context.fill();
+	context.restore();
+
+	// then draw the outlining circle
+	var tempSize = touchedPort.size*scaler*1;
+
+	context.save();
+	context.lineWidth = tempSize*.1;
+	context.strokeStyle = 'black';
+	context.beginPath();
+	context.arc(touchedPort.x,touchedPort.y,tempSize,0,Math.PI*2,false);
+	context.stroke();
 	context.restore();
 
 	// then draw the line
@@ -172,8 +218,8 @@ function drawTouchedPort(){
 	context.strokeStyle = 'black';
 
 	context.beginPath();
-	context.moveTo(touchedPort.x-middleX,touchedPort.y-middleY);
-	context.lineTo(mouse.x-middleX,mouse.y-middleY);
+	context.moveTo(touchedPort.x,touchedPort.y);
+	context.lineTo(mouse.x,mouse.y);
 
 	context.stroke();
 	context.restore();
@@ -193,9 +239,9 @@ function drawHoveredPort(){
 
 	context.save();
 	context.lineWidth = tempSize*.1;
-	context.strokeStyle = 'black';
+	context.strokeStyle = 'rgb(100,255,100)';
 	context.beginPath();
-	context.arc(hoveredPort.x-middleX,hoveredPort.y-middleY,tempSize,0,Math.PI*2,false);
+	context.arc(hoveredPort.x,hoveredPort.y,tempSize,0,Math.PI*2,false);
 	context.stroke();
 	context.restore();
 }
@@ -207,10 +253,10 @@ function drawHoveredPort(){
 function makeCircles(){
 	var tempThickness = .2;
 
-	var screenPercentage = 0.9;
+	var screenPercentage = 0.5;
 
 	outCircle = new Circle(context,'out',screenPercentage,tempThickness);
-	inCircle = new Circle(context,'in',screenPercentage/2,tempThickness);
+	inCircle = new Circle(context,'in',screenPercentage,tempThickness);
 }
 
 ////////////////////////////////////
@@ -235,11 +281,12 @@ function updateNodes(nodes){
 				}
 			}
 			if(!stillReal){
-				// erase this arc from the circles
+				// make sure there are no more connections from/to it
+				eraseNodeFromConnections(outCircle.arcs[i].id);
+
+				// then erase this arc from the circles
 				outCircle.deleteArc(outCircle.arcs[i].id);
 				inCircle.deleteArc(inCircle.arcs[i].id);
-
-				// and make sure there are no more connections from/to it
 			}
 		}
 	}
@@ -252,15 +299,21 @@ function updateNodes(nodes){
 				}
 			}
 			if(!test){
-				var color = {
-					'r':Math.floor(Math.random()*255),
-					'g':Math.floor(Math.random()*255),
-					'b':Math.floor(Math.random()*255)
-				}
+				var rColorIndex = nodes[n].id%colorPalette.length;
+				var color = colorPalette[rColorIndex];
 				// create a new arc for this node
 				outCircle.addArc(nodes[n].name,color,nodes[n].id);
 				inCircle.addArc(nodes[n].name,color,nodes[n].id);
 			}
+		}
+	}
+}
+
+function eraseNodeFromConnections(id){
+	for(var n in allConnections){
+		var portIDs = n.split('__')[0].split('/');
+		if(portIDs[0]==id || portIDs[1]==id){
+			delete allConnections[n];
 		}
 	}
 }
@@ -275,19 +328,57 @@ function adjustCanvas(){
 
 	theWidth = window.innerWidth;
 	theHeight = window.innerHeight;
-	usedSize = Math.floor(Math.min(theWidth,theHeight)*.4);
+	usedSize = Math.floor(Math.min(theWidth,theHeight)*.42);
 
 	canvas.width = theWidth;
 	canvas.height = theHeight;
-
 	canvas.style.width = theWidth+'px';
 	canvas.style.height = theHeight+'px';
 
-	middleX = Math.floor(theWidth*.45);
+	middleX = Math.floor(theWidth/2);
 	middleY = Math.floor(theHeight/2);
 
-	if(testerDiv && testerDiv.custom){
-		testerDiv.style.left = Math.floor(testerDiv.custom.xPos * window.innerWidth) + 'px';
+	if(outCircle && inCircle){
+		if(theWidth<theHeight){
+			var _offset = usedSize*0.5;
+			inCircle.centerX = middleX-_offset;
+			outCircle.centerX = middleX+_offset;
+			inCircle.centerY = middleY-_offset;
+			outCircle.centerY = middleY+_offset;
+		}
+		else{
+			var _offset = usedSize*0.5;
+			inCircle.centerX = middleX-_offset;
+			outCircle.centerX = middleX+_offset;
+			inCircle.centerY = middleY-_offset;
+			outCircle.centerY = middleY+_offset;
+		}
+	}
+
+	if(inNameBlock && outNameBlock){
+		var gutter = 0.15;
+		if(theWidth<theHeight){
+			inNameBlock.x = 0;
+			inNameBlock.y = middleY-usedSize*(1.2+gutter);
+			inNameBlock.width = theWidth;
+			inNameBlock.height = usedSize*.2;
+
+			outNameBlock.x = 0;
+			outNameBlock.y = middleY+usedSize*(1+gutter);
+			outNameBlock.width = theWidth;
+			outNameBlock.height = usedSize*.2;
+		}
+		else{
+			inNameBlock.x = middleX-usedSize*(1.5+gutter);
+			inNameBlock.y = -theHeight*.25;
+			inNameBlock.width = usedSize*.5;
+			inNameBlock.height = theHeight;
+
+			outNameBlock.x = middleX+usedSize*(1+gutter);
+			outNameBlock.y = -theHeight*.25;
+			outNameBlock.width = usedSize*.5;
+			outNameBlock.height = theHeight;
+		}
 	}
 }
 

@@ -91,7 +91,7 @@ var ws_handlers = {
 		var inputIndex = msg.data.inputIndex;
 		var outputIndex = msg.data.outputIndex;
 		if(receiveID>=0 && senderID>=0){
-			sendRoutingMessage(receiveID,senderID,outputIndex,inputIndex,5);
+			sendRoutingMessage(receiveID,senderID,inputIndex,outputIndex,5);
 		}
 		else if(inputIndex!=99){
 
@@ -133,26 +133,6 @@ var ws_handlers = {
 				delete socket.router.outPorts[outputIndex][receiveID];
 			}
 		}
-	},
-	'testerOutput': function(socket,msg){
-		var outIndex = msg.data.index;
-		var value = msg.data.value;
-		var r = socket.router.outPorts[outIndex];
-		if(r){
-			for(var i in r){
-				if(i<0){ // it's a self-routing message, so send back to browser
-					var msg = {
-						'value':value,
-						'index':r[i],
-						'senderID':i,
-						'senderIndex':outIndex
-					};
-					sendSocketMsg(socket,'testerValue',msg);
-				}
-				else{ // send value out to arduino to be sent to all receiving Nodes
-				}
-			}
-		}
 	}
 };
 
@@ -167,8 +147,7 @@ function saveTesterOnArduino(index,value){
 function cloneToBrowser(socket){
 	var msg = {
 		'nodes':{},
-		'connections':{},
-		'testerStuff':undefined
+		'connections':{}
 	}
 	for(var i in allNodes){
 		if(allNodes[i].connected){
@@ -184,12 +163,10 @@ function cloneToBrowser(socket){
 
 	if(!socket){
 		for(var i=0;i<allSockets.length;i++){
-			msg.testerStuff = allSockets[i].router;
 			sendSocketMsg(allSockets[i],'clone',msg);
 		}
 	}
 	else{
-		msg.testerStuff = socket.router;
 		sendSocketMsg(socket,'clone',msg);
 	}
 }
@@ -273,8 +250,8 @@ function createSerialHandlers(port){
 				var tempData = {
 					'id':msg[1],
 					'name':msg[2],
-					'totalInputs':msg[3],
-					'totalOutputs':msg[4],
+					'totalOutputs':msg[3],
+					'totalInputs':msg[4],
 					'port':{
 						'name':msg[5],
 						'index':msg[6],
@@ -286,18 +263,23 @@ function createSerialHandlers(port){
 						'values': []
 					}
 				}
+				console.log("meta: "+tempData.id + ' , port: '+tempData.port.name+' , routerID: '+tempData.router.id);
 				for(var i=9;i<msg.length;i++){
 					tempData.router.values[i-9] = msg[i];
 				}
-				//console.log("META: "+tempData.id);
+				if(tempData.id==12 && tempData.router.id==5){
+					//console.log(tempData.router.values);
+				}
 				handleMetaMessage(tempData);
 			}
 			else if(msg[0]==='poke'){
-				if(allNodes[msg[1]]){
+				console.log('poke: '+msg[1]);
+				if(allNodes[msg[1]] && allNodes[msg[1]].connected){
 					allNodes[msg[1]].resetSuicide();
 				}
 				else{
 					// initiate meta stuff with nodes that are already on
+					console.log('init meta message to node: '+msg[1]);
 					initMetaMessages(msg[1]); // these values will be ignored by the arduinos
 				}
 			}
@@ -326,14 +308,14 @@ function serialSend(msg) {
 
 var routeRequests = [];
 
-function sendRoutingMessage(receiveID,senderID,outputIndex,inputIndex,thresh){
+function sendRoutingMessage(receiveID,senderID,inputIndex,outputIndex,thresh){
 
 	if(receiveID>0 && receiveID<32){
 
 		var theString = String.fromCharCode(receiveID);
 		theString += String.fromCharCode(senderID);
-		theString += String.fromCharCode(outputIndex);
 		theString += String.fromCharCode(inputIndex);
+		theString += String.fromCharCode(outputIndex);
 
 		var len = String.fromCharCode(theString.length);
 
@@ -431,7 +413,7 @@ Node.prototype.resetSuicide = function(){
 	var myID = this.id;
 	this.suicide = setTimeout(function(){
 		disconnectNode(myID);
-	},10000);
+	},30000);
 }
 
 /////////////////////////////////////
@@ -455,6 +437,7 @@ function handleMetaMessage(data){
 		// create a new node
 		var tempNode = new Node();
 		allNodes[data.id] = tempNode;
+		initMetaMessages(data.id);
 	}
 	if(!allNodes[data.id].connected){
 		allNodes[data.id].connected = true;
@@ -472,6 +455,18 @@ function disconnectNode(myID){
 	if(allNodes[myID]){
 		console.log('disconnecting node '+myID);
 		allNodes[myID].connected = false;
+		// then delete all connections dealing with that node
+
+		for(var n in allConnections){
+			if(n===myID){
+				delete allConnections[n];
+			}
+			else if(allConnections[n][myID]){
+				for(var i=0;i<allConnections[n][myID].length;i++){
+					allConnections[n][myID] = '99';
+				}
+			}
+		}
 	}
 }
 
