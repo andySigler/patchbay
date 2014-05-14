@@ -15,3 +15,9 @@ Install the required node-modules using:
 ```
 npm install
 ```
+
+Start the server with:
+
+```
+node app.js
+```
