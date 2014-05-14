@@ -12,6 +12,6 @@ Download the repo, and cd into the folder "node", which contains the script and 
 
 Install the required node-modules using:
 
-...
+```
 npm install
-...
+```
