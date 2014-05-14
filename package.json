@@ -8,8 +8,8 @@
     "node": "0.10.x"
   },
   "dependencies": {
-    "express": "*",
+    "express": "^4.2.0",
     "ws": "*",
-    "serialport": "*"
+    "serialport": "^1.4.0"
   }
 }

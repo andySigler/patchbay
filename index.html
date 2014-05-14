@@ -9,11 +9,25 @@
 				margin: 0px 0px 0px 0px;
 				padding: 0px 0px 0px 0px;
 				overflow:hidden;
+				background-color: rgb(79,79,79);
+			}
+			@font-face {
+			    font-family: "Matchbook";
+			    src: url(./fonts/Matchbook.ttf);
 			}
 			canvas{
 				position:absolute;
 				left:0px;
 				right:0px;
+			}
+			#title{
+				position:absolute;
+				top:0px;
+				left:50%;
+				margin-top: 20px;
+				font-family: "Matchbook", Helvetica;
+				font-size: 100px;
+				color:white;
 			}
 			#container{
 				display:block;
@@ -185,39 +199,114 @@
 			</div>
 			<div id="message">
 			</div>
+			<div id="title"></div>
 		</div>
 		<script type="text/javascript">
+
+		var testingGUI = false;
+
+		var testingGUI_Nodes = [
+			{
+				'name':'Thing_1',
+				'inputs':['Up','Down'],
+				'outputs':['Brightness','Speed']
+			},
+			{
+				'name':'Thing_2',
+				'inputs':['Button'],
+				'outputs':['Light']
+			},
+			{
+				'name':'Thing_3',
+				'inputs':['Slider','Slider','Slider'],
+				'outputs':['Motor','Motor','Motor']
+			},
+			{
+				'name':'Biggie',
+				'inputs':[],
+				'outputs':['Nod','Position']
+			},
+			{
+				'name':'Switch',
+				'inputs':['State'],
+				'outputs':[]
+			},
+			{
+				'name':'Horse',
+				'inputs':[],
+				'outputs':['speed']
+			},
+
+			{
+				'name':'Thunder',
+				'inputs':['Volume'],
+				'outputs':[]
+			},
+			{
+				'name':'Guitar',
+				'inputs':['Volume','Speed','Pitch'],
+				'outputs':[]
+			},
+			{
+				'name':'Frogger',
+				'inputs':[],
+				'outputs':['Speed']
+			},
+			{
+				'name':'Lamp',
+				'inputs':[],
+				'outputs':['Brightness']
+			},
+			{
+				'name':'Music',
+				'inputs':['Beat','Volume'],
+				'outputs':['Volume','Song']
+			},
+			{
+				'name':'PrintOBot',
+				'inputs':[],
+				'outputs':['Print','Speed']
+			},
+			{
+				'name':'Hair',
+				'inputs':['Bow'],
+				'outputs':['Music']
+			}
+		];
 
 		window.onload = function(){
 			setupCanvas();
 			setupWebsockets();
-			makeTestingNodes();
+			if(testingGUI){
+				makeTestingNodes();
+			}
 			drawLoop();
 		}
 
 		function makeTestingNodes(){
 			// test nodes for playing with patchbay
 			// create a new arc for the Tester
-			var rand = Math.floor(Math.random()*12)+5;
-			for(var i=0;i<rand;i++){
-				var rColorIndex = i % colorPalette.length;
-				var color = colorPalette[rColorIndex];
-			    outCircle.addArc('thing_'+i,color,i+2);
-			    inCircle.addArc('thing_'+i,color,i+2);
+			for(var i=0;i<3;i++){
+				if(i<testingGUI_Nodes.length){
+					var rColorIndex = i % colorPalette.length;
+					var color = colorPalette[rColorIndex];
+				    outCircle.addArc(testingGUI_Nodes[i].name,color,i+2);
+				    inCircle.addArc(testingGUI_Nodes[i].name,color,i+2);
 
-			    var rOutputs = Math.floor(Math.random()*6)+1;
-			    for(var o=0;o<rOutputs;o++){
-			        outCircle.arcs[outCircle.arcs.length-1].addPort(o);
-			        outCircle.arcs[outCircle.arcs.length-1].ports[o].name = 'out_'+o;
-			        outCircle.arcs[outCircle.arcs.length-1].paletteIndex = rColorIndex;
-			    }
+				    var rOutputs =testingGUI_Nodes[i].outputs.length;
+				    for(var o=0;o<rOutputs;o++){
+				        outCircle.arcs[outCircle.arcs.length-1].addPort(o);
+				        outCircle.arcs[outCircle.arcs.length-1].ports[o].name = testingGUI_Nodes[i].outputs[o];
+				        outCircle.arcs[outCircle.arcs.length-1].paletteIndex = rColorIndex;
+				    }
 
-			    var rInputs = Math.floor(Math.random()*6)+1;
-			    for(var o=0;o<rInputs;o++){
-			        inCircle.arcs[inCircle.arcs.length-1].addPort(o);
-			        inCircle.arcs[inCircle.arcs.length-1].ports[o].name = 'in_'+o;
-			        inCircle.arcs[inCircle.arcs.length-1].paletteIndex = rColorIndex;
-			    }
+				    var rInputs = testingGUI_Nodes[i].inputs.length;
+				    for(var o=0;o<rInputs;o++){
+				        inCircle.arcs[inCircle.arcs.length-1].addPort(o);
+				        inCircle.arcs[inCircle.arcs.length-1].ports[o].name = testingGUI_Nodes[i].inputs[o];
+				        inCircle.arcs[inCircle.arcs.length-1].paletteIndex = rColorIndex;
+				    }
+				}
 			}
 		}
 

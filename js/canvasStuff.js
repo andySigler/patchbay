@@ -10,7 +10,6 @@ var mouse;
 
 var touchedPort = undefined;
 var hoveredPort = undefined;
-var hoveredCord = undefined;
 
 var allConnections = {};
 
@@ -18,19 +17,14 @@ var inNameBlock,outNameBlock;
 
 var colorPalette = [
 	{
+		'r':252,
+		'g':120,
+		'b':43
+	},
+	{
 		'r':30,
 		'g':147,
 		'b':175
-	},
-	{
-		'r':43,
-		'g':211,
-		'b':252
-	},
-	{
-		'r':79,
-		'g':79,
-		'b':79
 	},
 	{
 		'r':176,
@@ -38,15 +32,29 @@ var colorPalette = [
 		'b':176
 	},
 	{
-		'r':252,
-		'g':120,
-		'b':43
+		'r':176,
+		'g':176,
+		'b':79
+	},
+	{
+		'r':43,
+		'g':211,
+		'b':252
+	},
+	{
+		'r':176,
+		'g':79,
+		'b':176
+	},
+	{
+		'r':176,
+		'g':79,
+		'b':79
 	}
 ];
 
 function setupCanvas(){
 	canvas = document.getElementById('canvas');
-	adjustCanvas();
 	context = canvas.getContext('2d');
 
 	mouse = new Mouse();
@@ -64,33 +72,25 @@ function setupCanvas(){
 		mouse.dragEvent(x,y,true);
 		mouse.touchEvent();
 	});
-	var didDouble = false;
-	hammerTime.on('doubletap',function(event){
+	var didTap = false;
+	hammerTime.on('tap',function(event){
 		event.gesture.preventDefault();
-		var x = event.gesture.center.pageX;
-		var y = event.gesture.center.pageY;
-		didDouble = true;
-		mouse.dragEvent(x,y,true);
-		mouse.touchEvent();
-		if(outCircle.touched){
-			//
-		}
-		else if(inCircle.touched){
-			//
-		}
+		didTap = true;
 	});
-	hammerTime.on('dragend release',function(event){
+	hammerTime.on('release',function(event){
 		event.gesture.preventDefault();
 		var x = event.gesture.center.pageX;
 		var y = event.gesture.center.pageY;
-		if(!didDouble){
-			mouse.releaseEvent(x,y);
-		}
-		else didDouble = false;
+
+		if(didTap) mouse.tapEvent(x,y);
+
+		else mouse.releaseEvent(x,y);
+
 		if(hoveredPort){
 			hoveredPort.hovereed = false;
 			hoveredPort = undefined;
 		}
+		didTap = false;
 	});
 	hammerTime.on('dragleft dragright dragup dragdown swipeleft swiperight swipeup swipedown',function(event){
 		event.gesture.preventDefault();
@@ -100,7 +100,6 @@ function setupCanvas(){
 	});
 
 	makeCircles();
-	adjustCanvas();
 
 	inNameBlock = new NameBlock(context,inCircle);
 	outNameBlock = new NameBlock(context,outCircle);
@@ -114,8 +113,8 @@ function setupCanvas(){
 
 function drawLoop(){
 
-	inNameBlock.update();
-	outNameBlock.update();
+	// inNameBlock.update();
+	// outNameBlock.update();
 
 	mouse.update();
 
@@ -130,8 +129,8 @@ function drawLoop(){
 	context.clearRect(0,0,canvas.width,canvas.height);
 	context.save();
 
-	inNameBlock.draw();
-	outNameBlock.draw();
+	// inNameBlock.draw();
+	// outNameBlock.draw();
 
 	//drawCircleLabels();
 
@@ -151,7 +150,7 @@ function drawLoop(){
 	if(touchedPort) drawTouchedPort();
 	if(hoveredPort) drawHoveredPort();
 
-	//drawScroller();
+	context.restore();
 
 	requestAnimFrame(drawLoop);
 }
@@ -192,7 +191,7 @@ function drawTouchedPort(){
 
 	context.save();
 
-	context.fillStyle = 'black';
+	context.fillStyle = 'white';
 
 	context.beginPath();
 	context.arc(touchedPort.x,touchedPort.y,tempSize*.33,0,Math.PI*2,false);
@@ -205,7 +204,7 @@ function drawTouchedPort(){
 
 	context.save();
 	context.lineWidth = tempSize*.1;
-	context.strokeStyle = 'black';
+	context.strokeStyle = 'white';
 	context.beginPath();
 	context.arc(touchedPort.x,touchedPort.y,tempSize,0,Math.PI*2,false);
 	context.stroke();
@@ -215,7 +214,7 @@ function drawTouchedPort(){
 	context.save();
 
 	context.lineWidth = 3;
-	context.strokeStyle = 'black';
+	context.strokeStyle = 'white';
 
 	context.beginPath();
 	context.moveTo(touchedPort.x,touchedPort.y);
@@ -251,9 +250,9 @@ function drawHoveredPort(){
 ////////////////////////////////////
 
 function makeCircles(){
-	var tempThickness = .2;
+	var tempThickness = .1;
 
-	var screenPercentage = 0.5;
+	var screenPercentage = 0.25;
 
 	outCircle = new Circle(context,'out',screenPercentage,tempThickness);
 	inCircle = new Circle(context,'in',screenPercentage,tempThickness);
@@ -326,60 +325,42 @@ var counter = 0;
 
 function adjustCanvas(){
 
-	theWidth = window.innerWidth;
-	theHeight = window.innerHeight;
-	usedSize = Math.floor(Math.min(theWidth,theHeight)*.42);
+	if(inNameBlock && outNameBlock && outCircle && inCircle){
 
-	canvas.width = theWidth;
-	canvas.height = theHeight;
-	canvas.style.width = theWidth+'px';
-	canvas.style.height = theHeight+'px';
+		theWidth = window.innerWidth;
+		theHeight = window.innerHeight;
 
-	middleX = Math.floor(theWidth/2);
-	middleY = Math.floor(theHeight/2);
+		canvas.width = theWidth;
+		canvas.height = theHeight;
+		canvas.style.width = theWidth+'px';
+		canvas.style.height = theHeight+'px';
 
-	if(outCircle && inCircle){
+		middleX = Math.floor(theWidth/2);
+		middleY = Math.floor(theHeight/2);
+
+		usedSize = Math.min(theWidth,theHeight*1.2);
+
 		if(theWidth<theHeight){
-			var _offset = usedSize*0.5;
-			inCircle.centerX = middleX-_offset;
-			outCircle.centerX = middleX+_offset;
-			inCircle.centerY = middleY-_offset;
-			outCircle.centerY = middleY+_offset;
+			var Xoffset = theWidth*.2;
+			var Yoffset = theHeight*0.2;
+			inCircle.centerX = middleX-Xoffset;
+			outCircle.centerX = middleX+Xoffset;
+			inCircle.centerY = middleY-Yoffset;
+			outCircle.centerY = middleY+Yoffset;
 		}
 		else{
-			var _offset = usedSize*0.5;
-			inCircle.centerX = middleX-_offset;
-			outCircle.centerX = middleX+_offset;
-			inCircle.centerY = middleY-_offset;
-			outCircle.centerY = middleY+_offset;
+			var Xoffset = usedSize*.3;
+			var Yoffset = theHeight*0.1;
+			inCircle.centerX = middleX-Xoffset;
+			outCircle.centerX = middleX+Xoffset;
+			inCircle.centerY = middleY-Yoffset;
+			outCircle.centerY = middleY+Yoffset;
 		}
 	}
 
-	if(inNameBlock && outNameBlock){
-		var gutter = 0.15;
-		if(theWidth<theHeight){
-			inNameBlock.x = 0;
-			inNameBlock.y = middleY-usedSize*(1.2+gutter);
-			inNameBlock.width = theWidth;
-			inNameBlock.height = usedSize*.2;
-
-			outNameBlock.x = 0;
-			outNameBlock.y = middleY+usedSize*(1+gutter);
-			outNameBlock.width = theWidth;
-			outNameBlock.height = usedSize*.2;
-		}
-		else{
-			inNameBlock.x = middleX-usedSize*(1.5+gutter);
-			inNameBlock.y = -theHeight*.25;
-			inNameBlock.width = usedSize*.5;
-			inNameBlock.height = theHeight;
-
-			outNameBlock.x = middleX+usedSize*(1+gutter);
-			outNameBlock.y = -theHeight*.25;
-			outNameBlock.width = usedSize*.5;
-			outNameBlock.height = theHeight;
-		}
-	}
+	var title = document.getElementById('title');
+	title.style.left = Math.floor(outCircle.centerX-(usedSize*.15))+'px';
+	title.style.fontSize = Math.floor(usedSize*.15)+'px';
 }
 
 window.onresize = adjustCanvas;

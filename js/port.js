@@ -43,31 +43,18 @@ Port.prototype.update = function(rad,size){
 ////////////////////////////////////
 
 Port.prototype.draw = function(scaler){
-	var cuttoff = .85;
-	var multiplier = 1.7;
-	scaler*=multiplier;
-	if(scaler>cuttoff) scaler = cuttoff;
-	if(scaler<0) scaler = 0;
-
-	scaler*=scaler;
 
 	this.scaler = scaler;
 
-	var tempSize = this.size*scaler*.5;
+	var tempSize = this.size*scaler*.53;
 
 	if(tempSize>2){
 		this.ctx.save();
 
-		if(false){
-			this.ctx.fillStyle = 'white';
-			this.ctx.strokeStyle = 'rgb('+this.parent.c.r+','+this.parent.c.g+','+this.parent.c.b+')';
-		}
-		else if(this.type==='in' || this.type==='out'){
-			this.ctx.strokeStyle = 'white';
-			this.ctx.fillStyle = 'rgb('+this.parent.c.r+','+this.parent.c.g+','+this.parent.c.b+')';
-		}
+		this.ctx.strokeStyle = 'rgb(79,79,79)';
+		this.ctx.fillStyle = 'rgb('+this.parent.c.r+','+this.parent.c.g+','+this.parent.c.b+')';
 
-		this.ctx.lineWidth = Math.floor(tempSize*.3);
+		this.ctx.lineWidth = Math.floor(tempSize*.2);
 
 		this.ctx.beginPath();
 		this.ctx.arc(0,this.circleRad,tempSize,0,Math.PI*2,false);
@@ -82,20 +69,20 @@ Port.prototype.draw = function(scaler){
 Port.prototype.drawName = function(){
 	this.ctx.save();
 
-	var radOffset = this.parent.radius-(usedSize*0.25);
+	var radOffset = this.parent.radius-(usedSize*0.05);
 	this.ctx.translate(radOffset,0);
 
 	if(this.x<this.parent.parent.centerX){
-		this.ctx.textAlign = 'right';
+		this.ctx.textAlign = 'left';
 		this.ctx.rotate(Math.PI);
 	}
 	else{
-		this.ctx.textAlign = 'left';
+		this.ctx.textAlign = 'right';
 	}
 
-	var fontSize = Math.floor(this.scaler*this.size*.5);
+	var fontSize = Math.floor(this.scaler*this.size*.4);
 	this.ctx.font = fontSize+'px Helvetica';
-	if(this.touched || this.hovered) this.ctx.fillStyle = 'green';
+	if(this.touched || this.hovered) this.ctx.fillStyle = 'white';
 	else this.ctx.fillStyle = 'rgb('+this.parent.c.r+','+this.parent.c.g+','+this.parent.c.b+')';;
 
 	this.ctx.fillText(this.name,0,fontSize*.2);

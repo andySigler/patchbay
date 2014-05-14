@@ -28,7 +28,7 @@ NameBlock.prototype.draw = function(){
 
 		if(theHeight>theWidth){
 
-			var fontSize = Math.floor(usedSize*.08);
+			var fontSize = 24;
 			var textSpace = fontSize*6;
 			this.ctx.font = fontSize+'px Helvetica';
 
@@ -50,15 +50,16 @@ NameBlock.prototype.draw = function(){
 				}
 				else{
 					this.ctx.strokeStyle = 'rgba('+this.circle.arcs[i].c.r+','+this.circle.arcs[i].c.g+','+this.circle.arcs[i].c.b+','+opacity+')';
-					this.ctx.lineWidth = usedSize*.04;
+					var tempLineWidth = usedSize*.02;
+					this.ctx.lineWidth = tempLineWidth;
 					this.ctx.beginPath();
 					this.ctx.moveTo(xPos-textSpace/2,this.y);
 					this.ctx.lineTo(xPos+textSpace/2,this.y);
-					this.ctx.moveTo(xPos-textSpace/2,this.y+this.height);
-					this.ctx.lineTo(xPos+textSpace/2,this.y+this.height);
+					this.ctx.moveTo(xPos-textSpace/2,this.y+(this.height-tempLineWidth/2));
+					this.ctx.lineTo(xPos+textSpace/2,this.y+(this.height-tempLineWidth/2));
 					this.ctx.stroke();
 				}
-				this.ctx.fillText(this.circle.arcs[i].name,xPos,innerY+fontSize*.7);
+				this.ctx.fillText(this.circle.arcs[i].name,xPos,innerY+fontSize*.6);
 				i = (i-1);
 				if(i<0)i=inLen-1;
 			}
@@ -76,20 +77,21 @@ NameBlock.prototype.draw = function(){
 				}
 				else{
 					this.ctx.strokeStyle = 'rgba('+this.circle.arcs[i].c.r+','+this.circle.arcs[i].c.g+','+this.circle.arcs[i].c.b+','+opacity+')';
-					this.ctx.lineWidth = usedSize*.04;
+					var tempLineWidth = usedSize*.02;
+					this.ctx.lineWidth = tempLineWidth;
 					this.ctx.beginPath();
 					this.ctx.moveTo(xPos-textSpace/2,this.y);
 					this.ctx.lineTo(xPos+textSpace/2,this.y);
-					this.ctx.moveTo(xPos-textSpace/2,this.y+this.height);
-					this.ctx.lineTo(xPos+textSpace/2,this.y+this.height);
+					this.ctx.moveTo(xPos-textSpace/2,this.y+(this.height-tempLineWidth/2));
+					this.ctx.lineTo(xPos+textSpace/2,this.y+(this.height-tempLineWidth/2));
 					this.ctx.stroke();
 				}
-				this.ctx.fillText(this.circle.arcs[i].name,xPos,innerY+fontSize*.7);
+				this.ctx.fillText(this.circle.arcs[i].name,xPos,innerY+fontSize*.6);
 				i = (i+1)%inLen;
 			}
 		}
 		else{
-			var fontSize = Math.floor(usedSize*.08);
+			var fontSize = 24;
 			var textSpace = fontSize*3;
 			this.ctx.font = fontSize+'px Helvetica';
 
@@ -109,12 +111,13 @@ NameBlock.prototype.draw = function(){
 				}
 				else{
 					this.ctx.strokeStyle = 'rgba('+this.circle.arcs[i].c.r+','+this.circle.arcs[i].c.g+','+this.circle.arcs[i].c.b+','+opacity+')';
-					this.ctx.lineWidth = usedSize*.04;
+					var tempLineWidth = usedSize*.02;
+					this.ctx.lineWidth = tempLineWidth;
 					this.ctx.beginPath();
 					this.ctx.moveTo(this.x,yPos-textSpace/2);
 					this.ctx.lineTo(this.x,yPos+textSpace/2);
-					this.ctx.moveTo(this.x+this.width,yPos-textSpace/2);
-					this.ctx.lineTo(this.x+this.width,yPos+textSpace/2);
+					this.ctx.moveTo(this.x+(this.width-tempLineWidth/2),yPos-textSpace/2);
+					this.ctx.lineTo(this.x+(this.width-tempLineWidth/2),yPos+textSpace/2);
 					this.ctx.stroke();
 				}
 				this.ctx.fillText(this.circle.arcs[i].name,innerX,yPos+fontSize*.4);
@@ -135,12 +138,13 @@ NameBlock.prototype.draw = function(){
 				}
 				else{
 					this.ctx.strokeStyle = 'rgba('+this.circle.arcs[i].c.r+','+this.circle.arcs[i].c.g+','+this.circle.arcs[i].c.b+','+opacity+')';
-					this.ctx.lineWidth = usedSize*.04;
+					var tempLineWidth = usedSize*.02;
+					this.ctx.lineWidth = tempLineWidth;
 					this.ctx.beginPath();
 					this.ctx.moveTo(this.x,yPos-textSpace/2);
 					this.ctx.lineTo(this.x,yPos+textSpace/2);
-					this.ctx.moveTo(this.x+this.width,yPos-textSpace/2);
-					this.ctx.lineTo(this.x+this.width,yPos+textSpace/2);
+					this.ctx.moveTo(this.x+(this.width-tempLineWidth/2),yPos-textSpace/2);
+					this.ctx.lineTo(this.x+(this.width-tempLineWidth/2),yPos+textSpace/2);
 					this.ctx.stroke();
 				}
 				this.ctx.fillText(this.circle.arcs[i].name,innerX,yPos+fontSize*.4);

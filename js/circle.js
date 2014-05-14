@@ -8,6 +8,11 @@ function Circle(_ctx,_type,scale,thickness){
 	this.lineWidth;
 
 	this.arcOffset = 0;
+	this.targetOffset = 0;
+	this.isAutoMoving = false;
+	this.autoStepTotal = 20;
+	this.autoStepCount = 0;
+	this.autoStepSize = 0;
 	this.targetArc = 0;
 
 	this.highlighted = {
@@ -42,7 +47,8 @@ function Circle(_ctx,_type,scale,thickness){
 
 Circle.prototype.update = function(screenSize){
 
-	this.rotateDrag();
+	if(this.isAutoMoving) this.updateAutoMoving();
+	else this.rotateDrag();
 
 	var totalArcs = this.arcs.length;
 	if(totalArcs>0 && this.arcOffset<totalArcs){
@@ -65,21 +71,70 @@ Circle.prototype.update = function(screenSize){
 ////////////////////////////////////
 
 Circle.prototype.drawArcs = function(){
-	this.ctx.save();
-	this.ctx.translate(this.centerX,this.centerY);
+	if(this.arcs.length>0){
+		this.ctx.save();
+		this.ctx.translate(this.centerX,this.centerY);
 
-	var fontSize = Math.floor(usedSize*.1);
-	this.ctx.font = fontSize+'px Helvetica';
-	this.ctx.textAlign = 'center';
-	this.ctx.fillText(this.type.toUpperCase(),0,0);
+		var tempScaler = Math.floor(usedSize*.03);
+		var fontSize = tempScaler;
+		this.ctx.font = fontSize+'px Helvetica';
+		this.ctx.textAlign = 'center';
+		var labelOffsetY = tempScaler*2;
+		if(this.type=='in') labelOffsetY *= -1;
+		this.ctx.fillStyle = 'black';
+		this.ctx.fillText(this.type.toUpperCase(),0,labelOffsetY);
 
-	var totalArcs = this.arcs.length;
+		tempScaler = Math.floor(usedSize*.05);
+		fontSize = tempScaler;
+		this.ctx.font = fontSize+'px Helvetica';
 
-	for(var i=0;i<totalArcs;i++){
-		this.arcs[i].drawArc(this.lineWidth);
+		// then draw the currently displayed arc's name
+		var xOffsetScaler = 0.05;
+
+		var arc_0 = this.arcs[this.arcOffset];
+		tempScaler = Math.floor(usedSize*.05);
+		fontSize = tempScaler*arc_0.scaler;
+		this.ctx.font = fontSize+'px Helvetica';
+		var name_0 = arc_0.name;
+		var opacity = arc_0.scaler;
+		if(opacity>1) opacity = 1;
+		this.ctx.fillStyle = 'rgba('+arc_0.c.r+','+arc_0.c.g+','+arc_0.c.b+','+opacity+')';
+		var xOffset_0;
+		if(arc_0.type=='in'){
+			xOffset_0 = (this.lineWidth*tempScaler*xOffsetScaler)*this.animPercent;
+		}
+		else{
+			xOffset_0 = (-this.lineWidth*tempScaler*xOffsetScaler)*this.animPercent;
+		}
+		this.ctx.fillText(name_0,xOffset_0*.7,0);
+
+		var nextIndex = (this.arcOffset+1)%this.arcs.length;
+		var arc_1 = this.arcs[nextIndex]
+		var name_1 = arc_1.name;
+		opacity = arc_1.scaler;
+		if(opacity>1) opacity = 1;
+		this.ctx.fillStyle = 'rgba('+arc_1.c.r+','+arc_1.c.g+','+arc_1.c.b+','+opacity+')';
+		var xOffset_1;
+		if(arc_1.type=='in'){
+			xOffset_1 = (-this.lineWidth*tempScaler*xOffsetScaler)*(1-this.animPercent);
+		}
+		else{
+			xOffset_1 = (this.lineWidth*tempScaler*xOffsetScaler)*(1-this.animPercent);
+		}
+		fontSize = tempScaler*arc_1.scaler;
+		this.ctx.font = fontSize+'px Helvetica';
+		this.ctx.fillText(name_1,xOffset_1*.7,0);
+
+
+		var totalArcs = this.arcs.length;
+		var shouldDrawGrey = true;
+		if(totalArcs>20) shouldDrawGrey = false;
+		for(var i=0;i<totalArcs;i++){
+			this.arcs[i].drawArc(this.lineWidth,shouldDrawGrey);
+		}
+
+		this.ctx.restore();
 	}
-
-	this.ctx.restore();
 }
 
 ////////////////////////////////////
@@ -143,6 +198,67 @@ Circle.prototype.drawPorts = function(){
 		this.ctx.restore();
 	}
 	this.ctx.restore();
+}
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+
+Circle.prototype.startAutoMove = function(newOffset){
+	this.targetOffset = newOffset;
+	this.isAutoMoving = true;
+
+	var moveUp = newOffset - (this.arcOffset+this.arcs.length);
+	var moveDown = newOffset - this.arcOffset;
+
+	var amountToMove = moveUp-this.animPercent;
+	if(Math.abs(moveUp)>Math.abs(moveDown)){
+		if(Math.abs(moveDown)>this.arcs.length/2){
+			amountToMove = moveDown+this.arcs.length+this.animPercent;
+		}
+		else if(moveDown===0){
+			amountToMove = (moveDown-this.animPercent)%this.arcs.length;
+		}
+		else{
+			amountToMove = (moveDown+this.animPercent)%this.arcs.length;
+		}
+	}
+
+	this.autoStepSize = amountToMove/this.autoStepTotal;
+	this.autoStepCount = 0;
+
+	// if(this.arcs[this.arcOffset]) this.arcs[this.arcOffset].scaler = 0;
+	// this.arcOffset = newOffset;
+	// this.animPercent = 0;
+}
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+
+Circle.prototype.updateAutoMoving = function(){
+	if(this.autoStepCount<this.autoStepTotal){
+		this.animPercent += this.autoStepSize;
+		this.autoStepCount++;
+		if(this.animPercent>=1){
+			this.arcOffset-=this.animDirection;
+			if(this.arcOffset>=this.arcs.length) this.arcOffset = 0;
+			else if(this.arcOffset<0) this.arcOffset = this.arcs.length-1;
+			this.animPercent = 0;
+		}
+
+		else if(this.animPercent<0){
+			this.arcOffset+=this.animDirection;
+			if(this.arcOffset>=this.arcs.length) this.arcOffset = 0;
+			else if(this.arcOffset<0) this.arcOffset = this.arcs.length-1;
+			this.animPercent = 1+this.animPercent;
+		}
+	}
+	else{
+		this.isAutoMoving = false;
+		this.arcOffset = this.targetOffset;
+		this.animPercent = 0;
+	}
 }
 
 ////////////////////////////////////
@@ -216,6 +332,8 @@ Circle.prototype.transpose = function(i){
 
 Circle.prototype.mouseEvent = function(mouseX,mouseY){
 
+	var portTouched = false;
+
 	for(var i in this.highlighted){
 		i = Number(i);
 		if(this.highlighted[i]){
@@ -224,11 +342,25 @@ Circle.prototype.mouseEvent = function(mouseX,mouseY){
 			if(i==0) scaler = 1-scaler;
 			//scaler = 1;
 			if(this.arcs[arcIndex].isTouchingPort(mouseX,mouseY,scaler)){
-				return false;
+				this.touched = false;
+				portTouched = true;
 			}
 		}
 	}
-	return true;
+	if(!portTouched){
+		this.touched = true;
+		// see wich arc was touched
+		for(var n=0;n<this.arcs.length;n++){
+			var compRad = this.type=='in' ? mouse.in_radianNew : mouse.out_radianNew;
+			if(n==this.arcOffset && this.type=='in'){
+				compRad += (Math.PI*2);
+			}
+			if(compRad>this.arcs[n].start&&compRad<this.arcs[n].end){
+				this.arcs[n].touched = true;
+				break;
+			}
+		}
+	}
 }
 
 ////////////////////////////////////

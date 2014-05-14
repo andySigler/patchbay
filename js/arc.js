@@ -26,6 +26,8 @@ function Arc(_ctx,_parent,_type,_color,_name,_id,_index){
 	this.ports = [];
 
 	this.test = true;
+
+	this.scaler = 0;
 }
 
 ////////////////////////////////////
@@ -115,15 +117,35 @@ Arc.prototype.update = function(start,end,radius,portSize,padding,isSelected){
 ////////////////////////////////////
 ////////////////////////////////////
 
-Arc.prototype.drawArc = function(parentLineWidth){
+Arc.prototype.drawArc = function(parentLineWidth,shouldDrawGray){
 
 	this.ctx.save();
 
-	if(this.isSelected) this.ctx.strokeStyle = 'rgb('+this.c.r+','+this.c.g+','+this.c.b+')';
-	else this.ctx.strokeStyle = 'rgb(236,236,236)';
+	this.ctx.strokeStyle = 'rgb('+this.c.r+','+this.c.g+','+this.c.b+')';
 
-	if(this.parent.type==='in'){
-		this.ctx.lineWidth = parentLineWidth*.65;
+	if(this.ports.length>0){
+
+		this.ctx.lineWidth = Math.max(parentLineWidth*.65,1);
+
+		// draw a thick arc
+		this.ctx.beginPath();
+		this.ctx.arc(0,0,this.radius,this.start,this.end,false);
+
+		this.ctx.stroke();
+
+		if(this.parent.type==='in' && (shouldDrawGray||this.isSelected)){
+			// draw a white arc in the middle of the main arc
+			this.ctx.lineWidth = Math.max(parentLineWidth*.45,1);
+
+			var gutter = Math.PI*.012;
+			this.ctx.strokeStyle = 'rgb(79,79,79)';
+			this.ctx.beginPath();
+			this.ctx.arc(0,0,this.radius,this.start+gutter,this.end-gutter,false);
+			this.ctx.stroke();
+		}
+	}
+	else{
+		this.ctx.lineWidth = Math.max(parentLineWidth*.1,1);
 
 		// draw a thick arc
 		this.ctx.beginPath();
@@ -131,20 +153,6 @@ Arc.prototype.drawArc = function(parentLineWidth){
 
 		this.ctx.stroke();
 	}
-	else{
-		this.ctx.lineWidth = parentLineWidth*.1;
-		// draw two thin arcs
-		this.ctx.beginPath();
-		this.ctx.arc(0,0,this.radius*.94,this.start,this.end,false);
-
-		this.ctx.stroke();
-
-		this.ctx.beginPath();
-		this.ctx.arc(0,0,this.radius*1.06,this.start,this.end,false);
-
-		this.ctx.stroke();
-	}
-
 	this.ctx.restore();
 }
 
@@ -193,6 +201,16 @@ Arc.prototype.drawPorts = function(scaler){
 
 	this.ctx.rotate(this.start+(this.rotStep/2)-(Math.PI*.5));
 
+	var cuttoff = .85;
+	var multiplier = 1.7;
+	scaler*=multiplier;
+	if(scaler>cuttoff) scaler = cuttoff;
+	if(scaler<0) scaler = 0;
+
+	scaler*=scaler;
+
+	this.scaler = scaler/cuttoff;
+
 	for(var i=0;i<this.ports.length;i++){
 		if(this.ports[i]){
 			this.ports[i].draw(scaler);
@@ -213,7 +231,7 @@ Arc.prototype.isTouchingPort = function(x,y,scaler){
 			var xDiff = this.ports[i].x-x;
 			var yDiff = this.ports[i].y-y;
 			var absDiff = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
-			if(absDiff<this.ports[i].size*.5*scaler){
+			if(absDiff<this.ports[i].size*.4*scaler){
 				this.ports[i].touched = true;
 				touchedPort = this.ports[i];
 				return true;

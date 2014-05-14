@@ -15,6 +15,8 @@ function Mouse() {
 	this.out_radianPrev = undefined;
 	this.out_radianNew = undefined;
 	this.topSide = false;
+
+	this.justErased = false;
 }
 
 ////////////////////////////////////
@@ -28,46 +30,131 @@ Mouse.prototype.touchEvent = function(){
 	this.xDiff = 0;
 	this.yDiff = 0;
 
-	if(hoveredCord){
-		var name = hoveredCord.name;
-		if(allConnections[name]){
-			var c = allConnections[name];
-			// sendRoute(receiveID,routeID,outputIndex,inputIndex)
-			var receiverID = c.outPort.parent.id;
-			var routerID = c.inPort.parent.id;
-			sendRoute(receiverID,routerID,c.inPort.index,99);
+	var test = false;
+
+	for(var i in allConnections){
+		if(allConnections[i].hovered){
+			var xDiff = this.x-allConnections[i].deleteX;
+			var yDiff = this.y-allConnections[i].deleteY;
+			var tempDist = Math.sqrt(xDiff*xDiff+yDiff*yDiff);
+			if(tempDist<allConnections[i].deleteSize){
+				var receiveID = allConnections[i].outPort.parent.id;
+				var routeID = allConnections[i].inPort.parent.id;
+				var inportIndex = allConnections[i].inPort.index;
+				sendRoute(receiveID,routeID,inportIndex,99);
+				this.justErased = true;
+				if(testingGUI) delete allConnections[i];
+				test = true;
+				break;
+			}
 		}
 	}
 
-	else if(this.x>inNameBlock.x&&this.x<inNameBlock.x+inNameBlock.width&&this.y>inNameBlock.y&&this.y<inNameBlock.y+inNameBlock.height){
-		// it's in the inNameBlock
-		inNameBlock.touched = true;
-	}
-	else if(this.x>outNameBlock.x&&this.x<outNameBlock.x+outNameBlock.width&&this.y>outNameBlock.y&&this.y<outNameBlock.y+outNameBlock.height){
-		// it's in the outNameBlock
-		outNameBlock.touched = true;
-	}
-	else{
+	if(!test){
 		var in_xDist = Math.abs(inCircle.centerX-this.x);
 		var in_yDist = Math.abs(inCircle.centerY-this.y);
 		var out_xDist = Math.abs(outCircle.centerX-this.x);
 		var out_yDist = Math.abs(outCircle.centerY-this.y);
 
-		var outWidth = (outCircle.lineWidth*usedSize);
-		var inWidth = (inCircle.lineWidth*usedSize);
-
 		var in_distFromCenter = Math.sqrt(in_xDist*in_xDist+in_yDist*in_yDist);
 		var out_distFromCenter = Math.sqrt(out_xDist*out_xDist+out_yDist*out_yDist);
-		var outOuterRad = (outCircle.radiusPercentage*usedSize)+outCircle.lineWidth;
-		var outInnerRad = (outCircle.radiusPercentage*usedSize)-outCircle.lineWidth;
-		var inOuterRad = (inCircle.radiusPercentage*usedSize)+inCircle.lineWidth;
-		var inInnerRad = (inCircle.radiusPercentage*usedSize)-inCircle.lineWidth;
+		var outOuterRad = (outCircle.radiusPercentage*usedSize)+(outCircle.lineWidth*.4);
+		var outInnerRad = (outCircle.radiusPercentage*usedSize)-(outCircle.lineWidth*.4);
+		var inOuterRad = (inCircle.radiusPercentage*usedSize)+(inCircle.lineWidth*.4);
+		var inInnerRad = (inCircle.radiusPercentage*usedSize)-(inCircle.lineWidth*.4);
 
 		if(out_distFromCenter<=outOuterRad && out_distFromCenter>=outInnerRad){
-			outCircle.touched = outCircle.mouseEvent(this.x,this.y);
+			outCircle.mouseEvent(this.x,this.y);
 		}
 		else if(in_distFromCenter<=inOuterRad && in_distFromCenter>=inInnerRad){
-			inCircle.touched = inCircle.mouseEvent(this.x,this.y);
+			inCircle.mouseEvent(this.x,this.y);
+		}
+	}
+}
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+
+Mouse.prototype.tapEvent = function(_x,_y){
+	if(inCircle.touched){
+		for(var i=0;i<inCircle.arcs.length;i++){
+			if(inCircle.arcs[i].touched){
+				inCircle.startAutoMove(i);
+			}
+		}
+	}
+	else if(outCircle.touched){
+		for(var i=0;i<outCircle.arcs.length;i++){
+			if(outCircle.arcs[i].touched){
+				outCircle.startAutoMove(i);
+			}
+		}
+	}
+
+	if(this.x&&this.y){
+		this.xDiff = _x-this.x;
+		this.yDiff = _y-this.y;
+	}
+	this.x = _x;
+	this.y = _y;
+	this.down = false;
+	this.radianDown = undefined;
+	this.radianDiff = undefined;
+
+	if(touchedPort || this.justErased){
+		if(touchedPort && touchedPort.type==='in'){
+			for(var n in allConnections){
+				console.log(allConnections[n]);
+				if(allConnections[n].inPort===touchedPort){
+					allConnections[n].hovered = true;
+				}
+				else{
+					allConnections[n].hovered = false;
+				}
+			}
+		}
+		else if(touchedPort){
+			console.log('one');
+			for(var n in allConnections){
+				console.log(allConnections[n]);
+				if(allConnections[n].outPort===touchedPort){
+					allConnections[n].hovered = true;
+				}
+				else{
+					allConnections[n].hovered = false;
+				}
+			}
+		}
+		this.justErased = false;
+	}
+	else{
+		for(var n in allConnections){
+			allConnections[n].hovered = false;
+		}
+	}
+
+	touchedPort = undefined;
+	hoveredPort = undefined;
+
+	inNameBlock.touched = false;
+	outNameBlock.touched = false;
+
+	outCircle.touched = false;
+	for(var i=0;i<outCircle.arcs.length;i++){
+		outCircle.arcs[i].touched = false;
+		for(var n=0;n<outCircle.arcs[i].ports.length;n++){
+			outCircle.arcs[i].ports[n].touched = false;
+			outCircle.arcs[i].ports[n].hovered = false;
+		}
+	}
+
+	inCircle.touched = false;
+	for(var i=0;i<inCircle.arcs.length;i++){
+		inCircle.arcs[i].touched = false;
+		for(var n=0;n<inCircle.arcs[i].ports.length;n++){
+			inCircle.arcs[i].ports[n].touched = false;
+			inCircle.arcs[i].ports[n].hovered = false;
 		}
 	}
 }
@@ -96,7 +183,10 @@ Mouse.prototype.releaseEvent = function(_x,_y){
 
 	touchedPort = undefined;
 	hoveredPort = undefined;
-	hoveredCord = undefined;
+
+	for(var n in allConnections){
+		allConnections[n].hovered = false;
+	}
 
 	outCircle.touched = false;
 	for(var i=0;i<outCircle.arcs.length;i++){
@@ -191,21 +281,17 @@ Mouse.prototype.update = function(){
 		else if(inNameBlock.touched){
 			if(theHeight>theWidth){
 				if(in_radianDiff!=0) inCircle.radiansMoved -= (this.xDiff*blockSpeed);
-				//else inCircle.radiansMoved = 0;
 			}
 			else{
 				if(in_radianDiff!=0) inCircle.radiansMoved += (this.yDiff*blockSpeed);
-				//else inCircle.radiansMoved = 0;
 			}
 		}
 		else if(outNameBlock.touched){
 			if(theHeight>theWidth){
 				if(out_radianDiff!=0) outCircle.radiansMoved += (this.xDiff*blockSpeed);
-				//else outCircle.radiansMoved = 0;
 			}
 			else{
 				if(out_radianDiff!=0) outCircle.radiansMoved -= (this.yDiff*blockSpeed);
-				//else outCircle.radiansMoved = 0;
 			}
 		}
 	}
@@ -226,7 +312,6 @@ Mouse.prototype.findHover = function(){
 	if(hoveredPort) hoveredPort.hovered = false;
 
 	hoveredPort = undefined;
-	hoveredCord = undefined;
 
 	if(!outCircle.touched && !inCircle.touched){
 
@@ -271,42 +356,6 @@ Mouse.prototype.findHover = function(){
 						}
 					}
 				}
-			}
-		}
-	}
-
-	if(hoveredPort===undefined){
-		// find the closest cord
-		for(var h in allConnections){
-			var c = allConnections[h];
-			if(c.outPort.visible && c.inPort.visible && !hoveredCord){
-				var outXDiff = c.outPort.x-this.x;
-				var outYDiff = c.outPort.y-this.y;
-				var outDist = Math.sqrt(outXDiff*outXDiff+outYDiff*outYDiff);
-				if(outDist<c.dist){
-					var inXDiff = c.inPort.x-this.x;
-					var inYDiff = c.inPort.y-this.y;
-					var inDist = Math.sqrt(inXDiff*inXDiff+inYDiff*inYDiff);
-					if(inDist<c.dist){
-						var distDiff = Math.abs((outDist+inDist)-c.dist);
-						if(distDiff<1){
-							c.hovered = true;
-							hoveredCord = c;
-						}
-						else{
-							c.hovered = false;
-						}
-					}
-					else{
-						c.hovered = false;
-					}
-				}
-				else{
-					c.hovered = false;
-				}
-			}
-			else{
-				c.hovered = false;
 			}
 		}
 	}

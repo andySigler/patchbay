@@ -90,6 +90,7 @@ var ws_handlers = {
 		var senderID = msg.data.senderID;
 		var inputIndex = msg.data.inputIndex;
 		var outputIndex = msg.data.outputIndex;
+		console.log(msg);
 		if(receiveID>=0 && senderID>=0){
 			sendRoutingMessage(receiveID,senderID,inputIndex,outputIndex,5);
 		}
@@ -413,7 +414,7 @@ Node.prototype.resetSuicide = function(){
 	var myID = this.id;
 	this.suicide = setTimeout(function(){
 		disconnectNode(myID);
-	},30000);
+	},20000);
 }
 
 /////////////////////////////////////
