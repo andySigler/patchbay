@@ -16,6 +16,8 @@ Install the required node-modules using:
 npm install
 ```
 
+If you have an RF12-enabled Arduino running the "PatchBay_Server_Sketch", connect that Arduino over usb to the computer running this node script.
+
 Start the server with:
 
 ```
