@@ -26,9 +26,9 @@ const int yellowLed = 6;
 /////////////////////////////////
 /////////////////////////////////
 
-const int pingInterval = 30;
+const int pingInterval = 40;
 unsigned long pingStamp = 0;
-const int pingRepeatAmount = 3;
+const int pingRepeatAmount = 5;
 int pingRepeatCounter = 0;
 int receiverCount = 0;
 

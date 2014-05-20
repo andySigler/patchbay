@@ -414,7 +414,7 @@ Node.prototype.resetSuicide = function(){
 	var myID = this.id;
 	this.suicide = setTimeout(function(){
 		disconnectNode(myID);
-	},20000);
+	},30000);
 }
 
 /////////////////////////////////////
