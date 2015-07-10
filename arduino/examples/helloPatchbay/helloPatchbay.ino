@@ -21,14 +21,14 @@ int myID = 0;                                     // choose a unique ID for this
 byte total_inputs = 1;                            // total physical INPUT's on this device
 byte total_outputs = 1;                           // total physical OUTPUT's on this device
 
-Patchbay patch(myID, "Test", totalInputs, totalOutputs, myNetwork);
+Patchbay patch(myID, "Test", total_inputs, total_outputs, myNetwork);
 
 /////////////////////////////////
 /////////////////////////////////
 /////////////////////////////////
 
 int sensor_pin = A0;                              // the INPUT is a sensor connected to analog pin 0
-int led_pin = D6;                                 // the OUTPUT is an LED connected to digital pin 6
+int led_pin = 6;                                 // the OUTPUT is an LED connected to digital pin 6
 
 /////////////////////////////////
 /////////////////////////////////
