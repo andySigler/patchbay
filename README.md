@@ -2,6 +2,10 @@
 
 ##A Platform of Making Connections
 
-A repo has been made to store the 2014 version for my masters thesis [here](https://github.com/andysigler/patchbay-thesis-2014), and my thesis presentation can be seen [here](http://andysigler.com/projects/how-to-make-the-internet-of-useless-things/).
+(original version for my masters thesis is now kept [here](https://github.com/andysigler/patchbay-thesis-2014))
 
-This repo contains the hardware designs, Arduino library, and interface software to run Patchbay. It is in active development and will be updating often. The Arduino library is currently working on the ATmega328 (Arduino Uno), and the interface is currently run using NodeJS and HTML5 for development before moving to mobile.
+Patchbay is a wireless framework for simple communications between Arduino projects. It's currently built of an Arduino library, radio breakout board, and mobile interface.
+
+The library currently depends on LowPowerLab's [RFm69 library](https://github.com/lowpowerlab/rfm69), and Adafruit's Bluefruit LE [firmware](https://github.com/adafruit/Adafruit_BluefruitLE_Firmware) and [library](https://github.com/adafruit/Adafruit_BluefruitLE_nRF51).
+
+The HTML5 interface connects using Sandeep Mistry's [BLE node module](https://github.com/sandeepmistry/noble), but will soon move to mobile using Phonegap and Don Coleman's [BLE plugin](https://github.com/don/cordova-plugin-ble-central).
