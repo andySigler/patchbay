@@ -2,8 +2,8 @@
 ///////////
 ///////////
 
-#ifndef PatchbayBeta_h
-#define PatchbayBeta_h
+#ifndef Patchbay_h
+#define Patchbay_h
 
 #include "Arduino.h"
 #include "SPI.h"
@@ -24,11 +24,11 @@
 ///////////
 ///////////
 
-class PatchbayBeta{
+class Patchbay{
   public:
   	
     // initialize with a project ID, project name, input count, and output count
-  	PatchbayBeta(byte _id, char *_name,byte _totalInputs=0,byte _totalOutputs=0,byte _network=99,byte _maxLinks=5);
+  	Patchbay(byte _id, char *_name,byte _totalInputs=0,byte _totalOutputs=0,byte _network=99,byte _maxLinks=5);
 
     void begin();
     void begin(boolean verbose);

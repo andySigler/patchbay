@@ -2,28 +2,33 @@
 /////////////////////////////////
 /////////////////////////////////
 
-#define __patchbay__verbose 1
-
 #include <SPI.h>
 #include <SoftwareSerial.h>
 
 #include <RFM69.h>
 #include "Adafruit_BLE.h"
-#include "Adafruit_BluefruitLE_UART.h"
+#include "Adafruit_BluefruitLE_UART.h"            // soon to be replaced with Adafruit's new SPI version
 
-#include <PatchbayBeta.h>
+#include <Patchbay.h>
 
 /////////////////////////////////
 /////////////////////////////////
 /////////////////////////////////
 
-int myID = 0;
-int myNetwork = 99;
+int myNetwork = 99;                               // choose a mesh network to join, between 0-255
+int myID = 0;                                     // choose a unique ID for this device, between 0-254 (not 255)
 
-byte totalInputs = 5;
-byte totalOutputs = 5;
+byte total_inputs = 1;                            // total physical INPUT's on this device
+byte total_outputs = 1;                           // total physical OUTPUT's on this device
 
-PatchbayBeta patch(myID, "Patchbay", totalInputs, totalOutputs, myNetwork);
+Patchbay patch(myID, "Test", totalInputs, totalOutputs, myNetwork);
+
+/////////////////////////////////
+/////////////////////////////////
+/////////////////////////////////
+
+int sensor_pin = A0;                              // the INPUT is a sensor connected to analog pin 0
+int led_pin = D6;                                 // the OUTPUT is an LED connected to digital pin 6
 
 /////////////////////////////////
 /////////////////////////////////
@@ -31,37 +36,12 @@ PatchbayBeta patch(myID, "Patchbay", totalInputs, totalOutputs, myNetwork);
 
 void setup(){
   
-  Serial.begin(115200);
+  patch.begin();                                  // initialize radios and create BLE GATT services
   
-  Serial.println(F("starting Patchbay..."));
-  
-  pinMode(5,OUTPUT);
-  digitalWrite(5,HIGH);
-  
-  patch.begin(true);
-  
-  digitalWrite(5,LOW);
-  
-  Serial.println(F("setting names..."));
-  
-  char * inName = "button-0";
-  byte inNameLen = strlen(inName);
-  
-  for(byte i=0;i<totalInputs;i++){
-    patch.inputName(i,inName);
-    inName[inNameLen-1] = (char)(49 + i);
-  }
-  
-  char * outName = "LED-0";
-  byte outNameLen = strlen(outName);
-  
-  for(byte i=0;i<totalOutputs;i++){
-    patch.outputName(i,outName);
-    patch.link(i, true, myID, i); // tell each LED to listen to a button
-    outName[outNameLen-1] = (char)(49 + i);
-  }
-  
-  Serial.println(F("entering loop..."));
+  patch.inputName(0,"button");                    // assign a name to each INPUT and OUTPUT
+  patch.outputName(0,"LED");
+
+  pinMode(led_pin,OUTPUT);
 }
 
 /////////////////////////////////
@@ -69,8 +49,14 @@ void setup(){
 /////////////////////////////////
 
 void loop(){
-  if(patch.update()) {
-  }
+
+  patch.update();                                 // update all wireless communications
+
+  int new_value = patch.outputRead(0);            // read the OUTPUT value
+  analogWrite(led_pin, new_value);                // use it to brighten the LED
+
+  int sensor_value = analogRead(sensor_pin) / 4;  // map the sensor reading to 0-255
+  patch.inputWrite(0, sensor_value);              // write the new INPUT value
 }
 
 /////////////////////////////////

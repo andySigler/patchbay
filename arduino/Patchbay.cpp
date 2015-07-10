@@ -2,7 +2,7 @@
 ///////////
 ///////////
 
-#include "PatchbayBeta.h"
+#include "Patchbay.h"
 
 ///////////
 ///////////
@@ -22,7 +22,7 @@ Adafruit_BluefruitLE_UART ble(bluefruitSS,-1,9,8); // SS Object, Mode, RTS, CTS
 ///////////
 ///////////
 
-PatchbayBeta::PatchbayBeta(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,byte _network,byte _maxLinks){
+Patchbay::Patchbay(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,byte _network,byte _maxLinks){
 	name = _name;
 	patchID = _id;
 	patchNetwork = _network;
@@ -54,14 +54,14 @@ PatchbayBeta::PatchbayBeta(byte _id, char *_name,byte _totalInputs,byte _totalOu
 ///////////
 ///////////
 
-void PatchbayBeta::begin(boolean verbose) {
+void Patchbay::begin(boolean verbose) {
 
 	__verbose = verbose;
 
 	begin();
 }
 
-void PatchbayBeta::begin() {
+void Patchbay::begin() {
 
 	// init all our variables
 
@@ -100,7 +100,7 @@ void PatchbayBeta::begin() {
 ///////////
 ///////////
 
-boolean PatchbayBeta::update(){
+boolean Patchbay::update(){
 	
 	updateBLE();
 
@@ -111,7 +111,7 @@ boolean PatchbayBeta::update(){
 ///////////
 ///////////
 
-void PatchbayBeta::updateBLE() {
+void Patchbay::updateBLE() {
 
 	// check BLE things on much slower interval
 
@@ -158,7 +158,7 @@ void PatchbayBeta::updateBLE() {
 ///////////
 ///////////
 
-boolean PatchbayBeta::updateRFM69() {
+boolean Patchbay::updateRFM69() {
 	// then update the RFm69's properties
 
 	readRadio();
@@ -200,7 +200,7 @@ boolean PatchbayBeta::updateRFM69() {
 ///////////
 ///////////
 
-void PatchbayBeta::checkOutputLinksRX(Port _p){
+void Patchbay::checkOutputLinksRX(Port _p){
 
 	ble.print(F("AT+GATTCHAR="));
 	ble.println(_p.links_rx_ID);
@@ -223,7 +223,7 @@ void PatchbayBeta::checkOutputLinksRX(Port _p){
 ///////////
 ///////////
 
-void PatchbayBeta::resetBurst(){
+void Patchbay::resetBurst(){
 	sendCount = 0;
 }
 
@@ -231,7 +231,7 @@ void PatchbayBeta::resetBurst(){
 ///////////
 ///////////
 
-void PatchbayBeta::burst(){
+void Patchbay::burst(){
 	if(sendCount<sendThresh){
 		unsigned long now = millis();
 		if(sendStamp+sendInterval<now){
@@ -263,7 +263,7 @@ void PatchbayBeta::burst(){
 ///////////
 ///////////
 
-void PatchbayBeta::readRadio(){
+void Patchbay::readRadio(){
 	// read from the radio if there is any message
 	if (radio.receiveDone()){
 
@@ -294,7 +294,7 @@ void PatchbayBeta::readRadio(){
 
 // create a link
 
-void PatchbayBeta::link(byte _outputIndex, boolean _alive, byte _ID, byte _INDEX){
+void Patchbay::link(byte _outputIndex, boolean _alive, byte _ID, byte _INDEX){
 	if(_outputIndex<totalOutputs){
 		// the port will manage the links
 		if(_alive){
@@ -319,7 +319,7 @@ void PatchbayBeta::link(byte _outputIndex, boolean _alive, byte _ID, byte _INDEX
 // each PORT has an identical interface to the value (not link)
 // these might prove to be confusing, but seems ok for now...
 
-void PatchbayBeta::inputWrite(byte _inIndex, byte _newValue){
+void Patchbay::inputWrite(byte _inIndex, byte _newValue){
 	if(_inIndex<totalInputs){
 		if(_newValue>255){
 			_newValue=255;
@@ -335,7 +335,7 @@ void PatchbayBeta::inputWrite(byte _inIndex, byte _newValue){
 ///////////
 ///////////
 
-void PatchbayBeta::outputWrite(byte _outIndex, byte _newValue){
+void Patchbay::outputWrite(byte _outIndex, byte _newValue){
 	if(_outIndex<totalOutputs){
 		if(_newValue>255){
 			_newValue=255;
@@ -351,7 +351,7 @@ void PatchbayBeta::outputWrite(byte _outIndex, byte _newValue){
 ///////////
 ///////////
 
-boolean PatchbayBeta::inputChanged(byte _inIndex){
+boolean Patchbay::inputChanged(byte _inIndex){
 	if(_inIndex<totalInputs){
 		return inChangeFlag[_inIndex];
 	}
@@ -364,7 +364,7 @@ boolean PatchbayBeta::inputChanged(byte _inIndex){
 ///////////
 ///////////
 
-boolean PatchbayBeta::outputChanged(byte _outIndex){
+boolean Patchbay::outputChanged(byte _outIndex){
 	if(_outIndex<totalOutputs){
 		return outChangeFlag[_outIndex];
 	}
@@ -377,7 +377,7 @@ boolean PatchbayBeta::outputChanged(byte _outIndex){
 ///////////
 ///////////
 
-byte PatchbayBeta::inputRead(byte _inIndex){
+byte Patchbay::inputRead(byte _inIndex){
 	if(_inIndex<totalInputs){
 		return theInputs[_inIndex].getValue();
 	}
@@ -390,7 +390,7 @@ byte PatchbayBeta::inputRead(byte _inIndex){
 ///////////
 ///////////
 
-byte PatchbayBeta::outputRead(byte _outIndex){
+byte Patchbay::outputRead(byte _outIndex){
 	if(_outIndex<totalOutputs){
 		return theOutputs[_outIndex].getValue();
 	}
@@ -405,7 +405,7 @@ byte PatchbayBeta::outputRead(byte _outIndex){
 
 const char __letters__[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-void PatchbayBeta::setupBLE(){
+void Patchbay::setupBLE(){
 
 	// below are configuration settings for the BLE module
 
@@ -466,7 +466,7 @@ void PatchbayBeta::setupBLE(){
 ///////////
 ///////////
 
-void PatchbayBeta::setupServices(){
+void Patchbay::setupServices(){
 
 	if(__verbose) Serial.println(F("adding input services..."));
 	for(byte i=0;i<totalInputs;i++) {
@@ -501,7 +501,7 @@ void PatchbayBeta::setupServices(){
 ///////////
 
 // create a service for each Port, including all it's characteristics
-void PatchbayBeta::createBLEService(boolean isOutput, byte _index) {
+void Patchbay::createBLEService(boolean isOutput, byte _index) {
 
 	byte name_ID;
 	byte links_tx_ID;
@@ -560,7 +560,7 @@ void PatchbayBeta::createBLEService(boolean isOutput, byte _index) {
 ///////////
 ///////////
 
-void PatchbayBeta::updateBLELinkCharacteristics(Port _p) {
+void Patchbay::updateBLELinkCharacteristics(Port _p) {
 	// if the link values have updated, then update the TX char
 	// now give each Port an inital value for its links_rx char
 	byte numLinks = (_p.totalLinks * 6) - 1;
@@ -578,7 +578,7 @@ void PatchbayBeta::updateBLELinkCharacteristics(Port _p) {
 ///////////
 ///////////
 
-void PatchbayBeta::inputName(byte index, char * msg){
+void Patchbay::inputName(byte index, char * msg){
 	if(index<totalInputs) {
 		boolean success = setBLEChar(theInputs[index].name_ID, msg);
 		if(__verbose) Serial.print(F("Success writing to char? "));Serial.println(success);
@@ -589,7 +589,7 @@ void PatchbayBeta::inputName(byte index, char * msg){
 ///////////
 ///////////
 
-void PatchbayBeta::outputName(byte index, char * msg){
+void Patchbay::outputName(byte index, char * msg){
 	if(index<totalOutputs) {
 		boolean success = setBLEChar(theOutputs[index].name_ID, msg);
 		if(__verbose) Serial.print(F("Success writing to char? "));Serial.println(success);
@@ -600,7 +600,7 @@ void PatchbayBeta::outputName(byte index, char * msg){
 ///////////
 ///////////
 
-boolean PatchbayBeta::setBLEChar(byte id, char * val){
+boolean Patchbay::setBLEChar(byte id, char * val){
 
 	ble.print(F("AT+GATTCHAR="));
 	ble.print(id);
@@ -609,7 +609,7 @@ boolean PatchbayBeta::setBLEChar(byte id, char * val){
 	return BLE_print_with_OK(val);
 }
 
-boolean PatchbayBeta::setBLEChar(byte id, char * val, byte len){
+boolean Patchbay::setBLEChar(byte id, char * val, byte len){
 
 	ble.print(F("AT+GATTCHAR="));
 	ble.print(id);
@@ -622,7 +622,7 @@ boolean PatchbayBeta::setBLEChar(byte id, char * val, byte len){
 ///////////
 ///////////
 
-boolean PatchbayBeta::BLE_print_with_OK(char * msg) {
+boolean Patchbay::BLE_print_with_OK(char * msg) {
   delay(BLE_delay);
   byte len = strlen(msg);
   for(byte i=0;i<len;i++) {
@@ -632,7 +632,7 @@ boolean PatchbayBeta::BLE_print_with_OK(char * msg) {
   return custom_waitForOK();
 }
 
-boolean PatchbayBeta::BLE_print_with_OK(char * msg, byte len) {
+boolean Patchbay::BLE_print_with_OK(char * msg, byte len) {
   delay(BLE_delay);
   for(byte i=0;i<len;i++) {
   	ble.print(msg[i]);
@@ -641,13 +641,13 @@ boolean PatchbayBeta::BLE_print_with_OK(char * msg, byte len) {
   return custom_waitForOK();
 }
 
-boolean PatchbayBeta::BLE_print_with_OK(const __FlashStringHelper *msg) {
+boolean Patchbay::BLE_print_with_OK(const __FlashStringHelper *msg) {
   delay(BLE_delay);
   ble.println(msg);
   return custom_waitForOK();
 }
 
-boolean PatchbayBeta::BLE_print_with_OK(byte msg) {
+boolean Patchbay::BLE_print_with_OK(byte msg) {
   delay(BLE_delay);
   ble.println(msg);
   return custom_waitForOK();
@@ -657,7 +657,7 @@ boolean PatchbayBeta::BLE_print_with_OK(byte msg) {
 ///////////
 ///////////
 
-byte PatchbayBeta::BLE_print_with_int_reply(char * msg) {
+byte Patchbay::BLE_print_with_int_reply(char * msg) {
   delay(BLE_delay);
   uint32_t reply = 0;
   byte len = strlen(msg);
@@ -668,7 +668,7 @@ byte PatchbayBeta::BLE_print_with_int_reply(char * msg) {
   return reply;
 }
 
-byte PatchbayBeta::BLE_print_with_int_reply(const __FlashStringHelper *msg) {
+byte Patchbay::BLE_print_with_int_reply(const __FlashStringHelper *msg) {
   delay(BLE_delay);
   uint32_t reply = 0;
   ble.println(msg);
@@ -676,7 +676,7 @@ byte PatchbayBeta::BLE_print_with_int_reply(const __FlashStringHelper *msg) {
   return reply;
 }
 
-byte PatchbayBeta::BLE_print_with_int_reply(byte msg) {
+byte Patchbay::BLE_print_with_int_reply(byte msg) {
   delay(BLE_delay);
   uint32_t reply = 0;
   ble.println(msg);
@@ -688,7 +688,7 @@ byte PatchbayBeta::BLE_print_with_int_reply(byte msg) {
 ///////////
 ///////////
 
-boolean PatchbayBeta::custom_waitForOK(int timeToWait) {
+boolean Patchbay::custom_waitForOK(int timeToWait) {
   while (ble.readline(timeToWait)) {
     if (strcmp(ble.buffer, "OK") == 0) return true;
   }
