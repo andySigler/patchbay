@@ -2,7 +2,9 @@
 
 ##A Wireless Framework for Simple Connections
 
-Patchbay is a wireless framework for simple communications between Arduino projects. Originally developed for my [ITP '14 masters thesis](https://github.com/andysigler/patchbay-thesis-2014), I have rebuilt it from the ground up during my residency at ITP this past year.
+This framework was built so that I could re-route the wireless links between my devices on the fly. Peer-to-peer connections are made between nearby devices using a protocol similar to MIDI, and a mobile interface can make and break these connections. The idea is to lower the barrier to entry for a project to become wireless and interoperable with it's immediate surroundings.
+
+Originally developed for my [ITP '14 masters thesis](https://github.com/andysigler/patchbay-thesis-2014), I have rebuilt it from the ground up during my residency at ITP this past year.
 
 The Arduino library currently depends on LowPowerLab's [RFm69 library](https://github.com/lowpowerlab/rfm69), and Adafruit's Bluefruit LE [firmware](https://github.com/adafruit/Adafruit_BluefruitLE_Firmware) and [library](https://github.com/adafruit/Adafruit_BluefruitLE_nRF51).
 
