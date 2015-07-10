@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>PatchBay</title>
+		<link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+		<link rel="shortcut icon" href="./images/favicon.ico" type="image/x-icon">
+		<style>
+
+			html, body{
+				margin: 0px 0px 0px 0px;
+				padding: 0px 0px 0px 0px;
+				/*background-color: rgb(79,79,79);*/
+			}
+			@font-face {
+			    font-family: "Matchbook";
+			    src: url(./fonts/Matchbook.ttf);
+			}
+			@font-face {
+			    font-family: "clearSans";
+			    src: url(./fonts/clear-sans/ClearSans-Light.ttf);
+			}
+
+
+			html, body{
+				font-family: "clearSans", Helvetica;
+			}
+
+			#container{
+				margin: 0px 0px 0px 0px;
+				padding: 30px 0% 30px 5%;
+
+				margin-left: auto;
+				margin-right: auto;
+
+				display:block;
+				position:relative;
+
+
+
+				background-color: rgb(39,39,39);
+			}	
+			.orange{
+				color:rgb(252,120,43);
+			}
+			#patchbayTitle{
+				position:absolute;
+				top:0px;
+				left:63%;
+				margin-top: 20px;
+				font-family: "Matchbook", Helvetica;
+				font-size: 7em;
+				color:white;
+			}
+			#routerContainer{
+				position:relative;
+				width:100%;
+
+				overflow:visible;
+				display:inline-block;
+				/*background-color: rgb(79,79,79);*/
+				margin-top: 0px;
+				margin-left: -5%;
+			}
+			canvas{
+				position:absolute;
+				left:0px;
+				top:0px;
+			}
+			#scanButton {
+				position: absolute;
+				right:30px;
+				top:15px;
+				color:gray;
+				cursor:pointer;
+			}
+			#discovery {
+				position: absolute;
+				right:30px;
+				top:25px;
+				color:white;
+			}
+		</style>
+		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+		<script type="text/javascript" src="./js/hammer.min.js"></script>
+		<script type="text/javascript" src="./js/websocketStuff.js"></script>
+		<script type="text/javascript" src="./js/canvasStuff.js"></script>
+		<script type="text/javascript" src="./js/cord.js"></script>
+		<script type="text/javascript" src="./js/port.js"></script>
+		<script type="text/javascript" src="./js/arc.js"></script>
+		<script type="text/javascript" src="./js/circle.js"></script>
+		<script type="text/javascript" src="./js/mouse.js"></script>
+	</head>
+	<body>
+		<div id="container">
+			<div id="routerContainer">
+				<div id="patchbayTitle"></div>
+				<canvas id="canvas"></canvas>
+			</div>
+			<div id="scanButton">
+				<h3>Scan</h3>
+			</div>
+			<div id="discovery">
+				<h5>Discovering...</h5>
+			</div>
+		</div>
+		<script type="text/javascript">
+
+		window.addEventListener('load', function () {
+			setupUI();
+			setupCanvas();
+			setupWebsockets();
+			adjustCanvas();
+			drawLoop();
+		});
+
+		function updateScanButton(state) {
+			var butt = document.getElementById('scanButton');
+			butt.currentState = state ? true : false;
+
+			if(butt.currentState) {
+				butt.style.color = 'rgb(100,255,100)';
+				butt.innerHTML = 'Scan ON';
+			}
+			else {
+				butt.style.color = 'gray';
+				butt.innerHTML = 'Scan OFF';
+			}
+		}
+
+		function setupUI(){
+
+			var butt = document.getElementById('scanButton');
+
+			updateScanButton(false);
+
+			var hammerTime = Hammer(butt);
+			hammerTime.on('touch',function(event){
+				var msg = {
+					'type' : 'scan',
+					'data' : {
+						'state' : !butt.currentState
+					}
+				};
+
+				ws.send(JSON.stringify(msg));
+			});
+		}
+
+		</script>
+	</body>
+</html>
