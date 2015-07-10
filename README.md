@@ -1,6 +1,6 @@
 #PatchBay
 
-##A Platform of Making Connections
+##A Wireless Framework for Simple Connections
 
 (original version for my masters thesis is now kept [here](https://github.com/andysigler/patchbay-thesis-2014))
 
