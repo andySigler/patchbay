@@ -1,4 +1,4 @@
-#PatchBay
+#Patchbay
 
 ##A Wireless Framework for Simple Connections
 
