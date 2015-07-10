@@ -2,7 +2,7 @@
 
 ##A Wireless Framework for Simple Connections
 
-This was built so that I could easily create peer-to-peer connections between my Arduino projects, using a protocol conceptually similar to MIDI. The idea is to lower the barrier to entry for a project to become both wireless and interoperable, and to gain control over those connections through a mobile interface.
+This was built so that I could easily create peer-to-peer connections between my Arduino projects, using a protocol conceptually similar to MIDI. The idea is to lower the barrier to entry for a project to become both wireless and interoperable, and to gain direct control over wireless links through a mobile interface.
 
 Originally developed for my [ITP '14 masters thesis](https://github.com/andysigler/patchbay-thesis-2014), I have rebuilt it from the ground up during my residency at ITP this past year.
 
