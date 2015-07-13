@@ -2,7 +2,7 @@
 
 ##A Wireless Framework for Simple Connections
 
-This was built so that I could easily create peer-to-peer connections between my Arduino projects. The idea is to lower the barrier to entry for a project to become wireless and interoperable, using a wireless protocol inspired by MIDI, and device-specific Bluetooth LE profiles, auto-generated for each project.
+This was built so that I could *very* easily create peer-to-peer connections between my physical computing projects, both old and new. The idea is to lower the barrier to entry for a project to become wireless and interoperable, using a wireless protocol inspired by MIDI, and device-specific Bluetooth LE profiles, auto-generated for each project.
 
 Originally developed for my [ITP '14 masters thesis](https://github.com/andysigler/patchbay-thesis-2014), I have rebuilt it from the ground up during my residency at ITP this past year.
 
