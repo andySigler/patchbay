@@ -9,14 +9,7 @@
 ///////////
 
 // Create an instance of the BLE object, using the default pins
-
-// RX is on pin 4
-// TX is on pin 7
-// RTS is on pin 8
-// CTS is on pin 9
-// all other optional pins aren't being used, so they're set to -1
-SoftwareSerial bluefruitSS = SoftwareSerial(7, 4); // TX, RX
-Adafruit_BluefruitLE_UART ble(bluefruitSS,-1,9,8); // SS Object, Mode, RTS, CTS
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
 ///////////
 ///////////
@@ -78,7 +71,7 @@ void Patchbay::begin() {
 	BLE_interval = 200; // how often it will check the BLE Characteristics
 	BLE_timestamp = 0; // time stamp for the last time we checked our BLE stuff
 
-	BLE_delay = 200; // default delay time for when writing to the BLE module's SS port
+	BLE_delay = 10; // default delay time for when writing to the BLE module's SS port
 
 
 	//  then init both the radios
@@ -659,7 +652,7 @@ boolean Patchbay::BLE_print_with_OK(byte msg) {
 
 byte Patchbay::BLE_print_with_int_reply(char * msg) {
   delay(BLE_delay);
-  uint32_t reply = 0;
+  int32_t reply = 0;
   byte len = strlen(msg);
   for(byte i=0;i<len;i++) {
   	ble.print(msg[i]);
@@ -670,7 +663,7 @@ byte Patchbay::BLE_print_with_int_reply(char * msg) {
 
 byte Patchbay::BLE_print_with_int_reply(const __FlashStringHelper *msg) {
   delay(BLE_delay);
-  uint32_t reply = 0;
+  int32_t reply = 0;
   ble.println(msg);
   ble.sendCommandWithIntReply(F(""), &reply);
   return reply;
@@ -678,7 +671,7 @@ byte Patchbay::BLE_print_with_int_reply(const __FlashStringHelper *msg) {
 
 byte Patchbay::BLE_print_with_int_reply(byte msg) {
   delay(BLE_delay);
-  uint32_t reply = 0;
+  int32_t reply = 0;
   ble.println(msg);
   ble.sendCommandWithIntReply(F(""), &reply);
   return reply;
