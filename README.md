@@ -25,7 +25,7 @@ Include the Patchbay library in your Arduino sketch, and initialize it with the 
 #define INPUTS 		2
 #define OUTPUTS 	1
 
-Patchbay myPatch( ID , "Device-Name" , INPUTS , OUTPUTS);
+Patchbay myPatch( ID , "Device-Name" , INPUTS , OUTPUTS );
 ```
 
 All `inputs` and `outputs` are stored in two arrays for each type, and each is referenced through the API by their index. This means that if you have three `inputs`, the first has an identifier of `0`, the second `1`, and so on.
@@ -45,10 +45,34 @@ void setup(){
 `inputs` and `outputs` can be assigned names to show up in the Patchbay interface. These are strings or char arrays of less than 20 characters. Names should be assigned once inside the Arduino `setup()` function.
 
 ```
-myPatch.inputName(0,"button-1");
-myPatch.inputName(1,"button-2");
+myPatch.inputName( 0 , "button-1");
+myPatch.inputName( 1 , "button-2");
 
-myPatch.outputName(0,"LED");
+myPatch.outputName( 0 , "LED");
+```
+
+###Update
+
+Patchbay relies on very fast communication and update cycles with the breakout board. `.update()` handles all of this for you, checking for any BLE connections and updates, as well sending and receiving any necessary data over the RFm69.
+
+Call `.update()` as often as possible. If your sketch uses any blocking functions, either try and avoid it, or call `.update()` multiple times inside your `loop()`.
+
+```
+void loop(){
+	myPatch.update();
+}
+```
+
+`.update()` will also return a `boolean` for whether this devices' `outputs` have received a new value. If it returns `true`, your code should read the `output` values and handle them in whatever way your sketch needs to.
+
+```
+void loop(){
+	boolean outputs_changed = myPatch.update();
+
+	if(outputs_changed) {
+		int new_value = myPatch.outputRead(0);
+	}
+}
 ```
 
 ##Shoulders of Giants
