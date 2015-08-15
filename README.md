@@ -1,6 +1,6 @@
 #Patchbay
 
-##A Wireless Framework for Simple Connections
+##A Wireless Framework for Musical Instruments and Toys
 
 This was built so that I could <b>very</b> easily create peer-to-peer connections between my physical computing projects, both old and new. The idea is to lower the barrier to entry for a project to become wireless and interoperable, using a wireless protocol inspired by MIDI, and device-specific Bluetooth LE profiles, auto-generated for each project.
 
@@ -10,9 +10,9 @@ Originally developed for my [ITP '14 masters thesis](https://github.com/andysigl
 
 ###Connection
 
-The Patchbay breakout board connects over hardware SPI, which are pins 13, 12, and 11 on the Arduino Uno. The breakout also uses pins 10, 9, 8, 7, and 2 for SPI handshaking with both radios, and one additional reset pin for the nRF51822.
+The Patchbay breakout board connects over hardware SPI, which are pins `D13`, `D12`, and `D11` on the Arduino Uno. The breakout also uses pins `D10`, `D9`, `D8`, `D7`, and `D2` for SPI handshaking with both radios, and one additional reset pin for the nRF51822.
 
-On the Arduino Uno, this leaves digital pins 0, 1, 3, 4, 5, and 6 available, as well as all analog pins.
+On the Arduino Uno, this leaves digital pins `D0`, `D1`, `D3`, `D4`, `D5`, and `D6` available, as well as all Analog pins.
 
 ###Initialize
 
