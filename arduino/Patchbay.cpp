@@ -39,29 +39,20 @@ Patchbay::Patchbay(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,by
 			theOutputs[i].createLinks(maxLinks); // defaults to 5 links per output
 		}
 	}
-
-	__verbose = false;
 }
 
 ///////////
 ///////////
 ///////////
-
-void Patchbay::begin(boolean verbose) {
-
-	__verbose = verbose;
-
-	begin();
-}
 
 void Patchbay::begin() {
 
 	// init all our variables
 
 	sendCount = 0;
-	sendThresh = 5; // how many times it will burst
+	sendThresh = 10; // how many times it will burst
 	sendStamp = 0;
-	sendInterval = 20; // milliseconds between bursting broadcasts
+	sendInterval = 25; // milliseconds between bursting broadcasts
 
 	BLEConnected = false;
 
@@ -71,14 +62,15 @@ void Patchbay::begin() {
 	BLE_interval = 200; // how often it will check the BLE Characteristics
 	BLE_timestamp = 0; // time stamp for the last time we checked our BLE stuff
 
-	BLE_delay = 10; // default delay time for when writing to the BLE module's SS port
+	BLE_delay = 2; // default delay time for when writing to the BLE module's SS port
 
 
 	//  then init both the radios
 
-	if(__verbose) Serial.println(F("starting Patchbay"));
-
-	if(__verbose) Serial.println(F("starting BLE..."));
+	#if defined(Patchbay_verbose)
+	Serial.println(F("starting Patchbay"));
+	Serial.println(F("starting BLE..."));
+	#endif
 
 	// set device name and all Services needed
 	setupBLE();
@@ -86,7 +78,15 @@ void Patchbay::begin() {
 	// start the SPI communication with our RFM69
 	radio.initialize(RF69_915MHZ,patchID,patchNetwork);
 
-	if(__verbose) Serial.println(F("rfm69 initialized, Patchbay started"));
+	// set the radio power settings to max, so it's impressive
+	radio.setHighPower();
+
+	// no need to run promiscuous, since all packets are broadcasted to address 255
+	// radio.promiscuous();
+
+	#if defined(Patchbay_verbose)
+	Serial.println(F("rfm69 initialized, Patchbay started"));
+	#endif
 }
 
 ///////////
@@ -110,17 +110,24 @@ void Patchbay::updateBLE() {
 
 	if(BLE_timestamp + BLE_interval < millis()) {
 
+		noInterrupts();
+
 		// did we just connect between now and our last call to update()
 		boolean tempConnectionStatus = ble.isConnected();
 		if(!BLEConnected && tempConnectionStatus) {
 
-			//if(__verbose) Serial.println(F("\nBLE Connected\n"));
+			#if defined(Patchbay_verbose)
+			Serial.println(F("BLE Connected"));
+			#endif
 
 			// we just connected!!!!!
 			BLE_connected_stamp = millis();
 		}
 		else if(BLEConnected && !tempConnectionStatus){
-			//if(__verbose) Serial.println(F("\nBLE Disconnected\n"));
+
+			#if defined(Patchbay_verbose)
+			Serial.println(F("\nBLE Disconnected\n"));
+			#endif
 		}
 
 		BLEConnected = tempConnectionStatus;
@@ -138,12 +145,16 @@ void Patchbay::updateBLE() {
 			// if we've been connected too long, initial disconnection from central
 			if(BLE_connected_stamp + BLE_timeout < millis()) {
 				boolean didDisconnect = BLE_print_with_OK(F("AT+GAPDISCONNECT"));
-				if(__verbose) Serial.print(F("Disconnected? "));Serial.println(didDisconnect);
+				#if defined(Patchbay_verbose)
+				Serial.print(F("attempt disconnect: "));Serial.println(didDisconnect);
+				#endif
 			}
 
 		}
 
 		BLE_timestamp = millis();
+
+		interrupts();
 	}
 }
 
@@ -241,7 +252,6 @@ void Patchbay::burst(){
 				// newMessage loops through that Port's Links, writing the value if they match IDs
 				theOutputs[i].newMessage(patchID,totalInputs,packet);
 			}
-
 
 			radio.send(255,packet,totalInputs); // add 1 to the length of bytes (????)
 
@@ -402,35 +412,41 @@ void Patchbay::setupBLE(){
 
 	// below are configuration settings for the BLE module
 
-	// start the UART communication with our nRF51822
+	// start communication with our nRF51822
 	while ( !ble.begin(false)) {
-		if(__verbose) Serial.println("fuck");
+		#if defined(Patchbay_verbose)
 		Serial.println(F("Couldn't find Bluefruit"));
+		#endif
+		delay(BLE_delay);
+	}
+
+	// do a factory reset (why not?)
+	while (!ble.factoryReset()) {
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't factory reset"));
+		#endif
 		delay(BLE_delay);
 	}
 
 	// turn off Advertisements!!
 	if(!BLE_print_with_OK(F("AT+GAPSTOPADV"))) {
-		if(__verbose) 	Serial.println("Couldn't stop advertising!!");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't stop advertising!!"));
+		#endif
 	}
 
 	while(!BLE_print_with_OK(F("AT+GATTCLEAR"))){
-		Serial.println("Couldn't clear GATT...");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't clear GATT..."));
+		#endif
 		delay(500);
 	}
-
-
-	// do a factory reset (why not?)
-	// while (!ble.factoryReset()) {
-	// 	Serial.println(F("Couldn't factory reset"));
-	// 	delay(BLE_delay);
-	// }
 
 	// tell it to shutup
 	ble.echo(false);
 
 	// and then add this project's name
-	ble.print("AT+GAPDEVNAME=");
+	ble.print(F("AT+GAPDEVNAME="));
 	ble.print(name);
 	ble.print(F("~")); // separate the name from ID/Network HEX's
 	ble.print(__letters__[patchID/16]);
@@ -438,20 +454,26 @@ void Patchbay::setupBLE(){
     ble.print(__letters__[patchNetwork/16]);
     ble.print(__letters__[patchNetwork%16]);
 	if(!BLE_print_with_OK(F(""))) {
-		Serial.println("Couldn't set device name");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't set device name"));
+		#endif
 		while(true){}
 	}
 
 	// turn off Advertisements!!
 	if(!BLE_print_with_OK(F("AT+GAPSTOPADV"))) {
-		if(__verbose) Serial.println("Couldn't stop advertising!!");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't stop advertising!!"));
+		#endif
 	}
 
 	setupServices();
 
 	// turn off Advertisements!!
 	if(!BLE_print_with_OK(F("AT+GAPSTARTADV"))) {
-		if(__verbose) Serial.println("Couldn't restart advertising...");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't restart advertising..."));
+		#endif
 	}
 }
 
@@ -461,25 +483,35 @@ void Patchbay::setupBLE(){
 
 void Patchbay::setupServices(){
 
-	if(__verbose) Serial.println(F("adding input services..."));
+	#if defined(Patchbay_verbose)
+	Serial.println(F("adding input services..."));
+	#endif
 	for(byte i=0;i<totalInputs;i++) {
 		createBLEService(false,i);
 	}
-	if(__verbose) Serial.println(F("adding output services..."));
+
+	#if defined(Patchbay_verbose)
+	Serial.println(F("adding output services..."));
+	#endif
 	for(byte o=0;o<totalOutputs;o++) {
 		createBLEService(true,o);
 	}
 
-	if(__verbose) Serial.print(F("resetting ble.."));
+	#if defined(Patchbay_verbose)
+	Serial.print(F("resetting ble.."));
+	#endif
 	while(!ble.reset()) {
-		if(__verbose) Serial.print(F("."));
+		#if defined(Patchbay_verbose)
+		Serial.print(F("."));
+		#endif
 		delay(BLE_delay);
 	}
-	if(__verbose) Serial.println(F(""));
 
 	// turn off Advertisements!!
 	if(!BLE_print_with_OK(F("AT+GAPSTOPADV"))) {
-		if(__verbose) Serial.println("Couldn't stop advertising!!");
+		#if defined(Patchbay_verbose)
+		Serial.println(F("Couldn't stop advertising!!"));
+		#endif
 	}
 
 	// now give each Port an inital value for its links_rx & links_tx char
@@ -515,7 +547,9 @@ void Patchbay::createBLEService(boolean isOutput, byte _index) {
 
 	// give this Service a unique UUID, based off it's index
 	byte service_ID = BLE_print_with_int_reply(_index);
-	if(__verbose) Serial.print(F("\t"));Serial.println(service_ID);
+	#if defined(Patchbay_verbose)
+	Serial.print(F("\t"));Serial.println(service_ID);
+	#endif
 
 
 	// create the characteristics, and save each ID
@@ -523,7 +557,9 @@ void Patchbay::createBLEService(boolean isOutput, byte _index) {
 
 	// create the NAME characteristic    
     name_ID = BLE_print_with_int_reply(F("AT+GATTADDCHAR=UUID=0x1110, PROPERTIES=0x02, MIN_LEN=1, MAX_LEN=20"));
-    if(__verbose) Serial.print(F("\t\t"));Serial.println(name_ID);
+    #if defined(Patchbay_verbose)
+    Serial.print(F("\t\t"));Serial.println(name_ID);
+    #endif
 
 
     // Link services only needed for OUTPUTs
@@ -532,11 +568,15 @@ void Patchbay::createBLEService(boolean isOutput, byte _index) {
 	    // create the LINKS_TX characteristic
 	    ble.print(F("AT+GATTADDCHAR=UUID=0x1111, PROPERTIES=0x02, MIN_LEN=1, MAX_LEN="));	    
 	    links_tx_ID = BLE_print_with_int_reply(maxLinks * 2); // only need 2 bytes per link
-	    if(__verbose) Serial.print(F("\t\t"));Serial.println(links_tx_ID);
+	    #if defined(Patchbay_verbose)
+	    Serial.print(F("\t\t"));Serial.println(links_tx_ID);
+	    #endif
 
     	// create the LINKS_RX characteristic	    
 	    links_rx_ID = BLE_print_with_int_reply(F("AT+GATTADDCHAR=UUID=0x1112, PROPERTIES=0x08, MIN_LEN=3, MAX_LEN=3"));
-	    if(__verbose) Serial.print(F("\t\t"));Serial.println(links_rx_ID);
+	    #if defined(Patchbay_verbose)
+	    Serial.print(F("\t\t"));Serial.println(links_rx_ID);
+	    #endif
 	}
 
 
@@ -574,7 +614,9 @@ void Patchbay::updateBLELinkCharacteristics(Port _p) {
 void Patchbay::inputName(byte index, char * msg){
 	if(index<totalInputs) {
 		boolean success = setBLEChar(theInputs[index].name_ID, msg);
-		if(__verbose) Serial.print(F("Success writing to char? "));Serial.println(success);
+		#if defined(Patchbay_verbose)
+		Serial.print(F("Success writing to char? "));Serial.println(success);
+		#endif
 	}
 }
 
@@ -585,7 +627,9 @@ void Patchbay::inputName(byte index, char * msg){
 void Patchbay::outputName(byte index, char * msg){
 	if(index<totalOutputs) {
 		boolean success = setBLEChar(theOutputs[index].name_ID, msg);
-		if(__verbose) Serial.print(F("Success writing to char? "));Serial.println(success);
+		#if defined(Patchbay_verbose)
+		Serial.print(F("Success writing to char? "));Serial.println(success);
+		#endif
 	}
 }
 

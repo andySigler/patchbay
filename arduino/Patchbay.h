@@ -18,6 +18,13 @@
 ///////////
 ///////////
 
+// for debugging (because keeping serial intact seems to break SPI???)
+#define Patchbay_verbose true
+
+///////////
+///////////
+///////////
+
 #define BUFSIZE                        128   // Size of the read buffer for incoming data
 #define VERBOSE_MODE                   true  // If set to 'true' enables debug output
 #define BLUEFRUIT_SPI_CS               9
@@ -35,7 +42,6 @@ class Patchbay{
   	Patchbay(byte _id, char *_name,byte _totalInputs=0,byte _totalOutputs=0,byte _network=99,byte _maxLinks=5);
 
     void begin();
-    void begin(boolean verbose);
 
     // call as often as possible
   	boolean update();
@@ -80,7 +86,7 @@ class Patchbay{
     int BLE_timeout;
     int BLE_delay;
 
-    // some BLE communication helper functions, for using the UART Friend from Adafruit
+    // some BLE communication helper functions, for using the SPI Friend from Adafruit
     boolean BLE_print_with_OK(char * msg);
     boolean BLE_print_with_OK(char * msg, byte len);
     boolean BLE_print_with_OK(const __FlashStringHelper *msg);
@@ -115,8 +121,6 @@ class Patchbay{
 
   	void resetBurst(); // called when an input changes it's value
     void burst(); // broadcasts an array of all INPUT values
-
-    boolean __verbose;
 };
 
 #endif
