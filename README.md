@@ -10,7 +10,7 @@ Originally developed for my [ITP '14 masters thesis](https://github.com/andysigl
 
 ##Using Patchbay
 
-####Connection
+####Wiring
 
 The Patchbay breakout board connects over hardware SPI, which are pins `D13`, `D12`, and `D11` on the Arduino Uno. The breakout also uses pins `D10`, `D9`, `D8`, `D7`, and `D2` for SPI handshaking with both radios, and one additional reset pin for the nRF51822.
 
