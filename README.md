@@ -20,9 +20,11 @@ Include the Patchbay library in your Arduino sketch, and initialize it with the 
 
 ```
 #include <Patchbay.h>
-#define ID 1
-#define INPUTS 2
-#define OUTPUTS 1
+
+#define ID 			1
+#define INPUTS 		2
+#define OUTPUTS 	1
+
 Patchbay myPatch( ID , "Device-Name" , INPUTS , OUTPUTS);
 ```
 
@@ -45,6 +47,7 @@ void setup(){
 ```
 myPatch.inputName(0,"button-1");
 myPatch.inputName(1,"button-2");
+
 myPatch.outputName(0,"LED");
 ```
 
