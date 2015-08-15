@@ -67,10 +67,14 @@ void loop(){
 
 ```
 void loop(){
+
 	boolean outputs_changed = myPatch.update();
 
 	if(outputs_changed) {
+
 		int new_value = myPatch.outputRead(0);
+
+		analogWrite( 3 , new_value );
 	}
 }
 ```
