@@ -18,7 +18,7 @@ On the Arduino Uno, this leaves digital pins `D0`, `D1`, `D3`, `D4`, `D5`, and `
 
 Include the Patchbay library in your Arduino sketch, and initialize it with the mesh ID, the name of your device, and the number of physical `inputs` and `outputs` you would like it to expose.
 
-```
+```arduino
 #include <Patchbay.h>
 
 #define ID 			1
