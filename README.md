@@ -109,7 +109,7 @@ In addition, each `output` can be tested to see if it has changed or not with th
 
 ```arduino
 if( myPatch.update() ) {
-	for( int i=0; i<total_outputs;i++) {
+	for( int i=0; i<total_outputs; i++ ) {
 		if( myPatch.outputChanged( i ) ) {
 			int new_LED_value = myPatch.outputRead( i );
 		}
