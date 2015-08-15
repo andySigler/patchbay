@@ -113,7 +113,9 @@ In addition, each `output` can be tested to see if it has changed or not with th
 if( myPatch.update() ) {
 	for( int i=0; i<total_outputs; i++ ) {
 		if( myPatch.outputChanged( i ) ) {
-			int new_LED_value = myPatch.outputRead( i );
+			Serial.print("Output ");
+			Serial.print(i);
+			Serial.println(" has changed");
 		}
 	}
 }
