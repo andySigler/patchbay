@@ -34,7 +34,7 @@ All `inputs` and `outputs` are stored in two arrays for each type, and each is r
 
 Once initialzed at the top of your sketch, simple call `.setup()` inside of the Arduino `setup()` function. This function will begin SPI communication with both radios, set your network ID, as well as setup your device's custom GATT profile.
 
-```
+```arduino
 void setup(){
 	myPatch.setup();
 }
@@ -44,7 +44,7 @@ void setup(){
 
 `inputs` and `outputs` can be assigned names to show up in the Patchbay interface. These are strings or char arrays of less than 20 characters. Names should be assigned once inside the Arduino `setup()` function.
 
-```
+```arduino
 myPatch.inputName( 0 , "button-1");
 myPatch.inputName( 1 , "button-2");
 
@@ -57,7 +57,7 @@ Patchbay relies on very fast communication and update cycles with the breakout b
 
 Call `.update()` as often as possible. If your sketch uses any blocking functions, either try and avoid it, or call `.update()` multiple times inside your `loop()`.
 
-```
+```arduino
 void loop(){
 	myPatch.update();
 }
@@ -65,7 +65,7 @@ void loop(){
 
 `.update()` will also return a `boolean` for whether this devices' `outputs` have received a new value. If it returns `true`, your code should read the `output` values and handle them in whatever way your sketch needs to.
 
-```
+```arduino
 void loop(){
 
 	boolean outputs_changed = myPatch.update();
