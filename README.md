@@ -82,17 +82,17 @@ void loop(){
 Patchbay `inputs` can be physical inputs like sensors, and must be represented as an integer between `0` and `255`.
 
 ```arduino
-int knob_1_value = analogRead(0) / 4;		// map the value to 0-255
+int knob_1_value = analogRead(0) / 4;			// map the value to 0-255
 int knob_2_value = analogRead(1) / 4;
 ```
 
 An `input` is then written to, and automatically sent out over any wireless links that might exist.
 
 ```arduino
-myPatch.inputWrite( 0 , knob_1_value );		// set the values
+myPatch.inputWrite( 0 , knob_1_value );			// set the values
 myPatch.inputWrite( 1 , knob_2_value );
 
-myPatch.update();							// send the values wireless
+myPatch.update();								// send the values wireless
 ```
 
 ####Read from `outputs`
@@ -108,10 +108,13 @@ When an `outputs` value has been updated, `.update()` will return true, allowing
 In addition, each `output` can be tested to see if it has changed or not with the `.outputChanged()` function. This is useful if your sketch has multiple `outputs`.
 
 ```arduino
-if( myPatch.update() ) {
-	for( int i=0; i<total_outputs; i++ ) {
-		if( myPatch.outputChanged( i ) ) {
-			Serial.print("Output ");
+if( myPatch.update() ) {						// update all radio communications
+
+	for( int i=0; i<total_outputs; i++ ) {		// loop through all outputs
+
+		if( myPatch.outputChanged( i ) ) {		// test to see if this one has changed
+
+			Serial.print("Output ");			// use the new value
 			Serial.print(i);
 			Serial.println(" has changed");
 		}
