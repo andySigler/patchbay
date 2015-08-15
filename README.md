@@ -28,6 +28,16 @@ Patchbay myPatch( ID , "Device-Name" , INPUTS , OUTPUTS);
 
 All `inputs` and `outputs` are stored in two arrays for each type, and each is referenced through the API by their index. This means that if you have three `inputs`, the first has an identifier of `0`, the second `1`, and so on.
 
+###Setup
+
+Once initialzed at the top of your sketch, simple call `.setup()` inside of the Arduino `setup()` function. This function will begin SPI communication with both radios, set your network ID, as well as setup your device's custom GATT profile.
+
+```
+void setup(){
+	myPatch.setup();
+}
+```
+
 ###Naming an `input` or `output`
 
 `inputs` and `outputs` can be assigned names to show up in the Patchbay interface. These are strings or char arrays of less than 20 characters. Names should be assigned once inside the Arduino `setup()` function.
@@ -37,8 +47,6 @@ myPatch.inputName(0,"button-1");
 myPatch.inputName(1,"button-2");
 myPatch.outputName(0,"LED");
 ```
-
-To set a device name, call the `input` or `output` by its index
 
 ##Shoulders of Giants
 
