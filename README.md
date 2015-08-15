@@ -16,7 +16,7 @@ The Patchbay breakout board connects over hardware SPI, which are pins `D13`, `D
 
 On the Arduino Uno, this leaves digital pins `D0`, `D1`, `D3`, `D4`, `D5`, and `D6` available, as well as all Analog pins.
 
-![Patchbay Wiring](/hardware/patchbay_wiring.jpg?raw=true "Patchbay Wiring")
+![Patchbay Wiring](/hardware/patchbay_wiring_new.jpg?raw=true "Patchbay Wiring")
 
 ####Initialize
 
