@@ -101,8 +101,6 @@ Patchbay `outputs` can be physical outputs like lights or motors, and must be re
 
 ```arduino
 int new_LED_value = myPatch.outputRead( 0 );	// get the value
-
-analogWrite( 3 , LED_value );				// use the value for your sketch
 ```
 
 When an `outputs` value has been updated, `.update()` will return true, allowing the sketch to update physical outputs only when necessary.
