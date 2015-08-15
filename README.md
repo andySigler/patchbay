@@ -21,11 +21,11 @@ Include the Patchbay library in your Arduino sketch, and initialize it with the 
 ```arduino
 #include <Patchbay.h>
 
-#define ID 			1
-#define INPUTS 		2
-#define OUTPUTS 	1
+#define ID 					1
+#define total_inputs 		2
+#define total_outputs 		1
 
-Patchbay myPatch( ID , "Device-Name" , INPUTS , OUTPUTS );
+Patchbay myPatch( ID , "Device-Name" , total_inputs , total_outputs );
 ```
 
 All `inputs` and `outputs` are stored in two arrays for each type, and each is referenced through the API by their index. This means that if you have three `inputs`, the first has an identifier of `0`, the second `1`, and so on.
@@ -45,8 +45,8 @@ void setup(){
 `inputs` and `outputs` can be assigned names to show up in the Patchbay interface. These are strings or char arrays of less than 20 characters. Names should be assigned once inside the Arduino `setup()` function.
 
 ```arduino
-myPatch.inputName( 0 , "button-1");
-myPatch.inputName( 1 , "button-2");
+myPatch.inputName( 0 , "knob-1");
+myPatch.inputName( 1 , "knob-2");
 
 myPatch.outputName( 0 , "LED");
 ```
@@ -67,14 +67,52 @@ void loop(){
 
 ```arduino
 void loop(){
-
 	boolean outputs_changed = myPatch.update();
 
 	if(outputs_changed) {
+		// update your sketch as necessary
+	}
+}
+```
 
-		int new_value = myPatch.outputRead(0);
+###Write to `inputs`
 
-		analogWrite( 3 , new_value );
+Patchbay `inputs` can be physical inputs like sensors, and must be represented as an integer between `0` and `255`.
+
+```arduino
+int knob_1_value = analogRead(0) / 4;		// map the value to 0-255
+int knob_2_value = analogRead(1) / 4;
+```
+
+An `input` is then written to, and automatically sent out over any wireless links that might exist.
+
+```arduino
+myPatch.inputWrite( 0 , knob_1_value );		// set the values
+myPatch.inputWrite( 1 , knob_2_value );
+
+myPatch.update();							// send the values wireless
+```
+
+###Read from `outputs`
+
+Patchbay `outputs` can be physical outputs like lights or motors, and must be represented as an integer between `0` and `255`.
+
+```arduino
+int new_LED_value = myPatch.outputRead( 0 );	// get the value
+
+analogWrite( 3 , LED_value );				// use the value for your sketch
+```
+
+When an `outputs` value has been updated, `.update()` will return true, allowing the sketch to update physical outputs only when necessary.
+
+In addition, each `output` can be tested to see if it has changed or not with the `.outputChanged()` function. This is useful if your sketch has multiple `outputs`.
+
+```arduino
+if( myPatch.update() ) {
+	for( int i=0; i<total_outputs;i++) {
+		if( myPatch.outputChanged( i ) ) {
+			int new_LED_value = myPatch.outputRead( i );
+		}
 	}
 }
 ```
