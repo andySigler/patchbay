@@ -192,7 +192,7 @@ var PATCHBAY_NODES = {
 				// call the module's 'onDiscovery' event 
 				// if the container added the handler
 				if(thisModule.onDiscovery && typeof thisModule.onDiscovery==='function') {
-					thisModule.onDiscovery(periph);
+					thisModule.onDiscovery(periph.patchbay);
 				}
 			}
 		}
@@ -360,12 +360,13 @@ var PATCHBAY_NODES = {
 			var thisNode = self.connectedPeripherals[data.uuid].patchbay;
 
 			// read from the the next OUTPUT
-			if(!isNaN(data.index) && thisNode.outputs[data.index]) {
+			if(!isNaN(data.index) && thisNode.output[data.index]) {
 
-				var thisOutput = thisNode.outputs[data.index];
-				var thisService = thisNode.outputs_real[data.index];
+				var thisOutput = thisNode.output[data.index];
 
-				var thisCharacteristic = thisService.patchbay.links_rx;
+				var thisCharacteristic = thisOutput.characteristics.links_rx;
+
+				console.log('about to read');
 
 				// read from the characteristic
 				thisCharacteristic.read( function (error, data) {
@@ -373,6 +374,9 @@ var PATCHBAY_NODES = {
 					if(error) println(error);
 
 					if(data && Buffer.isBuffer(data)) {
+
+						console.log('got data:');
+						console.log(data);
 
 						// reset it's array of current links to an empty array 
 						thisOutput.links = [];
@@ -455,9 +459,9 @@ var PATCHBAY_NODES = {
 
 					var tempNode = self.connectedPeripherals[data.uuid].patchbay;
 
-					if(tempNode.outputs_real[data.index]) {
+					if(tempNode.output[data.index]) {
 
-						var theChar = tempNode.outputs_real[data.index].patchbay.links_tx;
+						var theChar = tempNode.output[data.index].characteristics.links_tx;
 
 						// now write to the Char
 						theChar.write(buf, true, function (error) {
@@ -605,21 +609,23 @@ var PATCHBAY_NODES = {
 					println(error);
 				}
 
-				// check to be sure it is still in the scene
-				if(self.scene[uuid]) {
+				periph.discoverAllServicesAndCharacteristics(function(e,s,c){
+					// check to be sure it is still in the scene
+					if(self.scene[uuid]) {
 
-					// save it to our list of connected nodes
-					self.connectedPeripherals[uuid] = self.scene[uuid];
+						// save it to our list of connected nodes
+						self.connectedPeripherals[uuid] = self.scene[uuid];
 
-					// erase it's 'death' timeout
-					self.immortal(uuid);
+						// erase it's 'death' timeout
+						self.immortal(uuid);
 
-					onConnect();
-				}
-				else {
-					// it must have timed out and been deleted from scene
-					periph.disconnect();
-				}
+						onConnect();
+					}
+					else {
+						// it must have timed out and been deleted from scene
+						periph.disconnect();
+					}
+				});
 			});
 		}
 	}
@@ -730,23 +736,54 @@ function discover (_p, onSuccess, onFailure) {
 	////////////
 
 	// the bytes that should appear at the beginning of a particular I/O service
-	var sharedServiceUUID = {
-		'output' : '78',
-		'input' : '68'
+	var port_gatt_ref = {
+		'output' : {
+			'uuid_prefix' : '78',
+			'total_chars' : 3,
+			'char_refs' : {
+				'1110' : 'name',
+				'1111' : 'links_rx',
+				'1112' : 'links_tx'
+			}
+		},
+		'input' : {
+			'uuid_prefix' : '68',
+			'total_chars' : 1,
+			'char_refs' : {
+				'1110' : 'name'
+			}
+		}
 	};
+
+	////////////
+	////////////
+	////////////
 
 	function listServices() {
 
-		// hold meta info about the Services
-		var inputServices_refs = [];
-		var outputServices_refs = [];
+		/*
 
-		// holds the actual Noble services to be used later
-		// they're in the same order as the refs, so I can access them by the same index
-		var inputServices_real = [];
-		var outputServices_real = [];
+			patchbay.input = [port,port,etc..];
+			patchbay.output = [port,port,etc..];
 
-		_p.discoverServices([], function (error, services) {
+
+			var port = {
+				'name' : String,
+				'links' : Array
+				'characteristics' : {
+					'name' : [Object],
+					'links_rx' : [Object],		// output only
+					'links_tx' : [Object]		// output only
+				}
+			}
+
+		*/
+
+		// stores all information
+		_p.patchbay.input = [];
+		_p.patchbay.output = [];
+
+		_p.discoverAllServicesAndCharacteristics(function (error, services, chars) {
 
 			//if a service returned, then that's our service
 			if(error || !services.length) {
@@ -756,141 +793,68 @@ function discover (_p, onSuccess, onFailure) {
 			}
 			else {
 
+				// loop through all services inside this peripheral
+				for(var s=0;s<services.length;s++) {
 
-				var currentService = -1;
+					// get the UUID of this internal service
+					var tempUUID = services[s].uuid;
 
-				var incrementCallback = function(successful, isInput, isOutput){
+					// get the first 2 bytes to tell it's type
+					var uuidPrefix = tempUUID.slice(0,2);
 
-					if(successful && services[currentService]) {
-						var tempUUID = services[currentService].uuid;
-						// add this service to 
-						var tempObj = {
-							'uuid' : services[currentService].uuid,
-							'name' : undefined
+					// the last 2 bytes tell it's index
+					var portIndex = Number(tempUUID.slice(2,4));
+
+					// test to see if this service if an 'input' or 'output'
+					var portType = undefined;
+
+					if(uuidPrefix === port_gatt_ref.output.uuid_prefix) {
+						portType = 'output';
+					}
+					else if(uuidPrefix === port_gatt_ref.input.uuid_prefix) {
+						portType = 'input';
+					}
+
+					var tempChars = services[s].characteristics;
+
+					if(portType && !isNaN(portIndex) && tempChars && tempChars.length) {
+
+						var thisCharRefs = port_gatt_ref[portType].char_refs;
+
+						var tempPort = {
+							'name' : '',
+							'links' : [],
+							'characteristics' : {}
 						};
-						if(isInput) {
-							inputServices_refs.push(tempObj);
-							inputServices_real.push(services[currentService]);
+						var foundChars = 0;
+
+						for(var c=0;c<tempChars.length;c++) {
+							var thisCharUUID = tempChars[c].uuid;
+
+							// see if this UUID is used by patchbay
+							var char_meaning = thisCharRefs[thisCharUUID];
+							if(char_meaning) {
+
+								// save this characteristic
+								tempPort.characteristics[char_meaning] = tempChars[c];
+
+								foundChars++;
+							}
 						}
-						else if(isOutput) {
-							outputServices_refs.push(tempObj);
-							outputServices_real.push(services[currentService]);
-						}
-					}
 
-					currentService++; // increment the counter
-
-					// then send it off to be looked through
-					if(currentService<services.length) {
-
-						tempService = services[currentService];
-
-						isInput = false;
-						isOutput = false;
-
-						if(tempService.uuid.indexOf(sharedServiceUUID.output)===0) isOutput = true;
-						else if(tempService.uuid.indexOf(sharedServiceUUID.input)===0) isInput = true;
-
-						if(isInput || isOutput) {
-							listCharacteristics(tempService, isInput, isOutput, incrementCallback);
-						}
-						else {
-
-							// this is not one of our services, so skip it
-							incrementCallback(false);
-						}
-					}
-					else {
-
-						// done looping through each and every service
-						// time to finish this search job
-						if(inputServices_refs.length>0 || outputServices_refs.length>0) {
-							if(!_p.patchbay) _p.patchbay = {};
-							_p.patchbay.inputs = inputServices_refs;
-							_p.patchbay.outputs = outputServices_refs;
-
-							// and save pointers to the real services
-							_p.patchbay.inputs_real = inputServices_real;
-							_p.patchbay.outputs_real = outputServices_real;
-
-							// now find the names of all the ports!!
-							getPortNames();
-						}
-						else {
-							finishDiscovery(false);
+						// test if we found all needed characteristics for this port
+						if(foundChars===port_gatt_ref[portType].total_chars) {
+							// save it to the correct port array at it's index
+							_p.patchbay[portType][portIndex] = tempPort;
 						}
 					}
 				}
-
-				incrementCallback(false);
 			}
-		});
-	}
 
-	////////////
-	////////////
-	////////////
-
-	// all characteristics an I/O service could hold
-	var allCharacteristics = {
-		'1110' : {
-			'output' : true,
-			'input' : true,
-			'type' : 'name'
-		},
-		'1111' : {
-			'output' : true,
-			'type' : 'links_rx'
-		},
-		'1112' : {
-			'output' : true,
-			'type' : 'links_tx'
-		}
-	};
-
-	function listCharacteristics(tempService, isInput, isOutput, callback) {
-
-		tempService.discoverCharacteristics([], function (error, characters) {
-
-			if(error || characters.length===0) {
-				if(error) println(error);
-				else println('no characteristics found!');
-				callback(false);
+			if(_p.patchbay.output.length+_p.patchbay.input.length) {
+				getPortNames();
 			}
-			else {
-
-				var foundChars = [];
-
-				// save the characteristics if found
-				for(var c=0;c<characters.length;c++) {
-					var thisChar = characters[c];
-
-					var charDetails = allCharacteristics[thisChar.uuid];
-
-					var serviceIndex
-
-					if(charDetails) {
-						if((isOutput && charDetails.output) || (isInput && charDetails.input)) {
-
-							// save a reference to this Characteristic inside the parent Service
-							if(!tempService.patchbay) tempService.patchbay = {};
-							tempService.patchbay[charDetails.type] = thisChar;
-							foundChars.push(thisChar.uuid);
-						}
-					}					
-				};
-
-				if(isOutput && foundChars.length===3) { // if we found 3 characteristics, it's OUTPUT
-					callback(true, isInput, isOutput);
-				}
-				else if(isInput && foundChars.length===1) { // if we found 1 characteristics, it's INPUT
-					callback(true, isInput, isOutput);
-				}
-				else {
-					// println('\t\tfound nothing :(');
-					callback(false);
-				}
-			}
+			else finishDiscovery(false);
 		});
 	}
 
@@ -908,34 +872,34 @@ function discover (_p, onSuccess, onFailure) {
 		var triedOutputs = false;
 
 		var readCount = 0;
-		var readCountTotal = _p.patchbay.inputs_real.length + _p.patchbay.outputs_real.length;
+		var readCountTotal = _p.patchbay.input.length + _p.patchbay.output.length;
 
-		function readNextNameChar(_realPorts, _myPorts) {
+		function readNextNameChar(_portsArray) {
 
 			currentIndex++;
 
-			if(currentIndex<_realPorts.length) {
+			if(currentIndex<_portsArray.length) {
 				// pull the real service
-				var thisPort = _realPorts[currentIndex];
+				var thisPort = _portsArray[currentIndex];
 
 				// inside that service, find the correct name characteristic
-				var nameChar = thisPort.patchbay.name;
+				var nameChar = thisPort.characteristics.name;
 
 				if(nameChar) {
 					nameChar.read( function (error, data){
 						if(error) {
 							println(error);
-							readNextNameChar(_realPorts, _myPorts);
+							readNextNameChar(_portsArray);
 						}
 						else {
 							readCount++;
-							_myPorts[currentIndex].name = data+''; // incase it's not a string
-							readNextNameChar(_realPorts, _myPorts);
+							thisPort.name = data+''; // incase it's not a string
+							readNextNameChar(_portsArray);
 						}
 					});
 				}
 				else {
-					readNextNameChar(_realPorts, _myPorts);
+					readNextNameChar(_portsArray);
 				}
 			}
 			else {
@@ -944,7 +908,7 @@ function discover (_p, onSuccess, onFailure) {
 				if(triedOutputs===false) {
 					triedOutputs = true;
 					currentIndex = -1; // reset the index counter
-					readNextNameChar(_p.patchbay.outputs_real, _p.patchbay.outputs);
+					readNextNameChar(_p.patchbay.output);
 				}
 				// already read OUTPUTs, so it's time to return
 				else if(readCount===readCountTotal){
@@ -957,7 +921,7 @@ function discover (_p, onSuccess, onFailure) {
 			}
 		}
 
-		readNextNameChar(_p.patchbay.inputs_real, _p.patchbay.inputs);
+		readNextNameChar(_p.patchbay.input);
 	}
 
 	////////////
@@ -968,14 +932,17 @@ function discover (_p, onSuccess, onFailure) {
 	try {
 		var tempArray = _p.advertisement.localName.split('~');
 
-		if(!_p.patchbay) _p.patchbay = {};
-		_p.patchbay.name = tempArray[0];
+		var thisName = tempArray[0];
 		var tempHexString = tempArray[1];
 		var idHexString = tempHexString.slice(0,2);
 		var networkHexString = tempHexString.slice(2);
 		var thisID = parseInt('0x'+idHexString);
 		var thisNetwork = parseInt('0x'+networkHexString);
 
+		if(!_p.patchbay) _p.patchbay = {};
+
+		_p.patchbay.uuid = _p.uuid;
+		_p.patchbay.name = thisName;
 		_p.patchbay.id = thisID;
 		_p.patchbay.network = thisNetwork;
 		// then connect and initiate discovery

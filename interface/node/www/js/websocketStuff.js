@@ -47,6 +47,8 @@ var wsHandlers = {
 
 		receivedStuff = data;
 
+		console.log(data);
+
 		// passes total port amount for each node, and eventually a name for each port
 		updateNodes(data.scene);
 
@@ -116,6 +118,8 @@ function refresh(){
 ////////////
 
 function sendRoute(outputUUID, inputUUID, inputIndex, outputIndex, isAlive){
+
+	console.log(arguments);
 
 	var inputID = undefined;
 	var outputID = undefined;

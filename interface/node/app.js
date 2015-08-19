@@ -94,9 +94,11 @@ function sendWebsocketMessage(msg) {
 ////////////
 ////////////
 
-var unsentMessages = [];
-
 function syncWebpage() {
+
+	// console.log('\n\n');
+	// console.log(foundNodes);
+	// console.log('\n\n');
 
 	var msg = {
 		'type' : 'sync',
@@ -224,13 +226,29 @@ BLE.onDiscovery = function(_node) {
 	// save the node (contains ports and their names)
 
 	var thisNode = {
-		'name' : _node.patchbay.name,
+		'name' : _node.name,
 		'uuid' : _node.uuid,
-		'id' : _node.patchbay.id,
-		'network' : _node.patchbay.network,
-		'input' : _node.patchbay.inputs,
-		'output' : _node.patchbay.outputs
+		'id' : _node.id,
+		'network' : _node.network,
+		'input' : [],
+		'output' : []
 	};
+
+	console.log('total inputs: '+_node.input.length);
+
+	// copy everything about the ports, except the characteristics
+	for(var i=0;i<_node.input.length;i++) {
+		var thisPort = _node.input[i];
+		thisNode.input[i] = {};
+		thisNode.input[i].name = thisPort.name;
+		thisNode.input[i].links = thisPort.links;
+	}
+	for(var i=0;i<_node.output.length;i++) {
+		var thisPort = _node.output[i];
+		thisNode.output[i] = {};
+		thisNode.output[i].name = thisPort.name;
+		thisNode.output[i].links = thisPort.links;
+	}
 
 	foundNodes[_node.uuid] = thisNode;
 
@@ -239,7 +257,7 @@ BLE.onDiscovery = function(_node) {
 
 	setTimeout(function(){
 		readAllLinks(thisNode);
-	},500);
+	},2000);
 
 	syncWebpage();
 }

@@ -1,0 +1,76 @@
+html, body{
+	margin: 0px 0px 0px 0px;
+	padding: 0px 0px 0px 0px;
+	/*background-color: rgb(79,79,79);*/
+}
+@font-face {
+    font-family: "Matchbook";
+    src: url(./fonts/Matchbook.ttf);
+}
+@font-face {
+    font-family: "clearSans";
+    src: url(./fonts/clear-sans/ClearSans-Light.ttf);
+}
+
+
+html, body{
+	font-family: "clearSans", Helvetica;
+	height:100%;
+}
+
+#container{
+	margin: 0px 0px 0px 0px;
+	padding: 30px 0% 30px 5%;
+
+	margin-left: auto;
+	margin-right: auto;
+
+	display:block;
+	position:relative;
+
+	width:100%;
+	height:100%;
+
+	background-color: rgb(39,39,39);
+}	
+.orange{
+	color:rgb(252,120,43);
+}
+#patchbayTitle{
+	position:absolute;
+	top:0px;
+	left:63%;
+	margin-top: 20px;
+	font-family: "Matchbook", Helvetica;
+	font-size: 7em;
+	color:white;
+}
+#routerContainer{
+	position:relative;
+	width:100%;
+	height:100%;
+
+	overflow:visible;
+	display:inline-block;
+	/*background-color: rgb(79,79,79);*/
+	margin-top: 0px;
+	margin-left: -5%;
+}
+canvas{
+	position:absolute;
+	left:0px;
+	top:0px;
+}
+#scanButton {
+	position: absolute;
+	right:40px;
+	top:35px;
+	color:gray;
+	cursor:pointer;
+}
+#discovery {
+	position: absolute;
+	right:40px;
+	top:55px;
+	color:white;
+}
