@@ -30,7 +30,7 @@ NameBlock.prototype.draw = function(){
 
 			var fontSize = 24;
 			var textSpace = fontSize*6;
-			this.ctx.font = fontSize+'px clearSans';
+			this.ctx.font = fontSize+'px Helvetica';
 
 			// inner circle
 
@@ -93,7 +93,7 @@ NameBlock.prototype.draw = function(){
 		else{
 			var fontSize = 24;
 			var textSpace = fontSize*3;
-			this.ctx.font = fontSize+'px clearSans';
+			this.ctx.font = fontSize+'px Helvetica';
 
 			var innerX = this.x+(this.width*.5);
 			var yFocus = this.y+(this.height*.5)+(textSpace*this.circle.animPercent);

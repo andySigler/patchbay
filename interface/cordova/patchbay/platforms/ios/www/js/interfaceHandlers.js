@@ -7,12 +7,21 @@ function updateScanButton(state) {
 	butt.currentState = state ? true : false;
 
 	if(butt.currentState) {
-		butt.style.color = 'rgb(100,255,100)';
+		butt.style.backgroundColor = 'rgb(100,255,100)';
 		butt.innerHTML = 'Scan ON';
 	}
 	else {
-		butt.style.color = 'gray';
+		butt.style.backgroundColor = 'rgb(176,176,176)';
 		butt.innerHTML = 'Scan OFF';
+	}
+}
+
+function updateDiscoveryIcon(state) {
+	if(state) {
+		document.getElementById('discovery').style.display = 'inline-block';
+	}
+	else {
+		document.getElementById('discovery').style.display = 'none';
 	}
 }
 
@@ -24,15 +33,9 @@ function setupUI(){
 
 	var hammerTime = Hammer(butt);
 	hammerTime.on('touch',function(event){
-		var msg = {
-			'type' : 'scan',
-			'data' : {
-				'state' : !butt.currentState
-			}
-		};
 
-		if(!butt.currentState) startListening();
-		else stopListening();
+		if(!butt.currentState) patchBLE.startListening();
+		else patchBLE.stopListening();
 	});
 }
 
@@ -40,30 +43,18 @@ function setupUI(){
 ////////////////////////////////////
 ////////////////////////////////////
 
-var receivedStuff;
+function syncInterface() {
 
-var wsHandlers = {
-	'sync' : function (data){
+	console.log('\n\nSYNCING NODES\n\n');
 
-		receivedStuff = data;
+	// passes total port amount for each node, and eventually a name for each port
+	updateNodes(patchBLE.scene);
 
-		// passes total port amount for each node, and eventually a name for each port
-		updateNodes(data.scene);
+	console.log('\n\nSYNCING CONNECTIONS\n\n');
 
-		if(data.discovering) {
-			document.getElementById('discovery').style.display = 'inline-block';
-		}
-		else {
-			document.getElementById('discovery').style.display = 'none';
-		}
-
-		// // passes master list of all connections (between an input and an output)
-		updateConnections(data.scene);
-
-		// then check if we're scanning or not
-		updateScanButton(data.scan)
-	}
-};
+	// // passes master list of all connections (between an input and an output)
+	updateConnections(patchBLE.scene);
+}
 
 //////////////
 //////////////
@@ -167,22 +158,22 @@ function sendRoute(outputUUID, inputUUID, inputIndex, outputIndex, isAlive){
 ////////////
 ////////////
 
-function updateConnections(data){
+function updateConnections(scene){
 
 	for(var c in allConnections){
 		allConnections[c].exists = false;
 	}
 
-	for(var outputUUID in data) {
+	for(var outputUUID in scene) {
 
-		var outputID = data[outputUUID].id;
+		var outputID = scene[outputUUID].patchbay.id;
 
 		for(var i=0;i<outCircle.arcs.length;i++) {
 
 			// loop through each Arc (node)
 			if(outCircle.arcs[i].id===outputID) {
 
-				var outputArray = data[outputUUID].output;
+				var outputArray = scene[outputUUID].patchbay.output;
 
 				// loop through all Output ports
 				for(var outputIndex=0;outputIndex<outputArray.length;outputIndex++) {

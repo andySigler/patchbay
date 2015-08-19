@@ -77,7 +77,7 @@ Circle.prototype.drawArcs = function(){
 
 		var tempScaler = Math.floor(usedSize*.03);
 		var fontSize = tempScaler;
-		this.ctx.font = fontSize+'px clearSans';
+		this.ctx.font = fontSize+'px Helvetica';
 		this.ctx.textAlign = 'center';
 		var labelOffsetY = tempScaler*2;
 		if(this.type=='input') labelOffsetY *= -1;
@@ -86,7 +86,7 @@ Circle.prototype.drawArcs = function(){
 
 		tempScaler = Math.floor(usedSize*.05);
 		fontSize = tempScaler;
-		this.ctx.font = fontSize+'px clearSans';
+		this.ctx.font = fontSize+'px Helvetica';
 
 		// then draw the currently displayed arc's name
 		var xOffsetScaler = 0.05;
@@ -94,7 +94,7 @@ Circle.prototype.drawArcs = function(){
 		var arc_0 = this.arcs[this.arcOffset];
 		tempScaler = Math.floor(usedSize*.05);
 		fontSize = tempScaler*arc_0.scaler;
-		this.ctx.font = fontSize+'px clearSans';
+		this.ctx.font = fontSize+'px Helvetica';
 		var name_0 = arc_0.name;
 		var opacity = arc_0.scaler;
 		if(opacity>1) opacity = 1;
@@ -124,7 +124,7 @@ Circle.prototype.drawArcs = function(){
 				xOffset_1 = (this.lineWidth*tempScaler*xOffsetScaler)*(1-this.animPercent);
 			}
 			fontSize = tempScaler*arc_1.scaler;
-			this.ctx.font = fontSize+'px clearSans';
+			this.ctx.font = fontSize+'px Helvetica';
 			this.ctx.fillText(name_1,xOffset_1*1.5,0);
 
 		}

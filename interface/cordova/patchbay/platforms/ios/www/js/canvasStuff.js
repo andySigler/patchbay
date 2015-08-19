@@ -283,23 +283,22 @@ function makeCircles(){
 ////////////////////////////////////
 ////////////////////////////////////
 
-function updateNodes(nodes){
-	for(var n in nodes){
-		nodes[n].represented = false;
+function updateNodes(scene){
+	for(var n in scene){
+		scene[n].patchbay.represented = false;
 	}
-
-	console.log(nodes);
 
 	for(var i=0;i<outCircle.arcs.length;i++){
 		if(outCircle.arcs[i].uuid!=='fake'){
 			var stillReal = false;
-			for(var n in nodes){
-				if(nodes[n].uuid===outCircle.arcs[i].uuid){
+			for(var n in scene){
+				console.log(scene[n].patchbay.uuid);
+				if(scene[n].patchbay.uuid===outCircle.arcs[i].uuid){
 					var stillReal = true;
-					nodes[n].represented = true;
+					scene[n].patchbay.represented = true;
 					// it already exists, so just update it's info
-					outCircle.arcs[i].handleMeta(nodes[n]);
-					inCircle.arcs[i].handleMeta(nodes[n]);
+					outCircle.arcs[i].handleMeta(scene[n].patchbay);
+					inCircle.arcs[i].handleMeta(scene[n].patchbay);
 					break;
 				}
 			}
@@ -313,24 +312,24 @@ function updateNodes(nodes){
 			}
 		}
 	}
-	for(var n in nodes){
-		if(!nodes[n].represented){
+	for(var n in scene){
+		if(!scene[n].patchbay.represented){
 			var test = false;
 			for(var i=0;i<outCircle.arcs.length;i++){
-				if(outCircle.arcs[i].uuid===nodes[n].uuid){
+				if(outCircle.arcs[i].uuid===scene[n].patchbay.uuid){
 					test = true;
 				}
 			}
 			if(!test){
-				var rColorIndex = nodes[n].id % colorPalette.length;
+				var rColorIndex = scene[n].patchbay.id % colorPalette.length;
 				var color = colorPalette[rColorIndex];
 				// create a new arc for this node
-				outCircle.addArc(nodes[n].name,color,nodes[n].uuid,nodes[n].id);
-				inCircle.addArc(nodes[n].name,color,nodes[n].uuid,nodes[n].id);
+				outCircle.addArc(scene[n].patchbay.name,color,scene[n].patchbay.uuid,scene[n].patchbay.id);
+				inCircle.addArc(scene[n].patchbay.name,color,scene[n].patchbay.uuid,scene[n].patchbay.id);
 
 				// then handle the meta data
-				outCircle.arcs[outCircle.arcs.length-1].handleMeta(nodes[n]);
-				inCircle.arcs[outCircle.arcs.length-1].handleMeta(nodes[n]);
+				outCircle.arcs[outCircle.arcs.length-1].handleMeta(scene[n].patchbay);
+				inCircle.arcs[outCircle.arcs.length-1].handleMeta(scene[n].patchbay);
 			}
 		}
 	}
@@ -411,10 +410,6 @@ function adjustCanvas(){
 	var canPos = findPos(canvas);
 	canvas.andyX = canPos[0];
 	canvas.andyY = canPos[1];
-
-	var title = document.getElementById('patchbayTitle');
-	title.style.left = Math.floor(outCircle.centerX-(usedSize*.15))+'px';
-	title.style.fontSize = Math.floor(usedSize*.15)+'px';
 
 	document.getElementById('routerContainer').style.height = canvas.height+'px';
 }

@@ -16,6 +16,9 @@ html, body{
 html, body{
 	font-family: "clearSans", Helvetica;
 	height:100%;
+	overflow: hidden;
+	margin:0;
+	padding:0;
 }
 
 #container{
@@ -63,14 +66,23 @@ canvas{
 }
 #scanButton {
 	position: absolute;
-	right:40px;
+	right:60px;
 	top:35px;
-	color:gray;
+
+	width:100px;
+
+	text-align: center;
+	color:rgb(79,79,79);
 	cursor:pointer;
+	background-color: rgb(176,176,176);
+
+	padding:5px 5px 5px 5px;
+	border-radius: 3px;
 }
 #discovery {
 	position: absolute;
-	right:40px;
+	right:60px;
 	top:55px;
 	color:white;
+	display:none;
 }

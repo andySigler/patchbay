@@ -59,7 +59,15 @@ function interfaceMessageHandler(msg) {
 			patchBLE.flush();
 			break;
 	}
-});
+}
+
+/////////////////////////////////
+/////////////////////////////////
+/////////////////////////////////
+
+function backendExists(){
+	console.log(patchBLE.onScanStart);
+}
 
 /////////////////////////////////
 /////////////////////////////////
@@ -69,9 +77,11 @@ var isScanning = false;
 
 patchBLE.onScanStart = function() {
 
+	console.log('\n\nhere!!!\n\n');
+
 	isScanning = true;
 
-	syncWebpage();
+	//syncWebpage();
 };
 
 patchBLE.onScanStop = function() {
@@ -121,8 +131,6 @@ patchBLE.onDiscovery = function(_node) {
 		'output' : _node.input
 	};
 
-	console.log('total inputs: '+_node.input.length);
-
 	foundNodes[_node.uuid] = thisNode;
 
 	console.log('found '+thisNode.name+' ('+thisNode.network+'-'+thisNode.id+')');
@@ -161,84 +169,84 @@ patchBLE.onErase = function(erasedNodes) {
 // and correspond to the opposing Input Port's index and RFM69 id
 
 function route(data) {
-	patchBLE.stopListening();
+	// patchBLE.stopListening();
 
-	function conclude(){
-		patchBLE.disconnect(data.uuid);
-		if(userWantsToScan) patchBLE.startListening();
-	}
+	// function conclude(){
+	// 	patchBLE.disconnect(data.uuid);
+	// 	if(userWantsToScan) patchBLE.startListening();
+	// }
 
-	var thisFinishFlag = false;
+	// var thisFinishFlag = false;
 
-	setTimeout(function(){
-		if(!thisFinishFlag) {
-			// we timed out :(
-			conclude();
-		}
-		thisFinishFlag = true;
-	},2000);
+	// setTimeout(function(){
+	// 	if(!thisFinishFlag) {
+	// 		// we timed out :(
+	// 		conclude();
+	// 	}
+	// 	thisFinishFlag = true;
+	// },2000);
 
-	patchBLE.connect(data.uuid, function () {
+	// patchBLE.connect(data.uuid, function () {
 
-		// console.log('sucessful connect, now writing...');
+	// 	// console.log('sucessful connect, now writing...');
 
-		patchBLE.writelink(data, function () {
+	// 	patchBLE.writelink(data, function () {
 
-			// console.log('sucessful write, now reading...');
+	// 		// console.log('sucessful write, now reading...');
 
-			// here it's tricky, because we have to wait for the node
-			// to update it's own patchBLE value, which should be ~500ms
-			// so we'll give it a maximum of 1000ms to fulfill it's duties
+	// 		// here it's tricky, because we have to wait for the node
+	// 		// to update it's own patchBLE value, which should be ~500ms
+	// 		// so we'll give it a maximum of 1000ms to fulfill it's duties
 
-			var thisSuccess = true;
-			var readAgain = true;
+	// 		var thisSuccess = true;
+	// 		var readAgain = true;
 
-			var thisInterval = setInterval(function(){
-				if(thisFinishFlag) {
-					if(!thisSuccess) {
-						console.log('DID NOT SUCCEED ON SYNC');
-						conclude();
-					}
-					clearInterval(thisInterval);
-				}
-				else if(readAgain){
-					readAgain = false;
-					patchBLE.readlink(data, function() {
+	// 		var thisInterval = setInterval(function(){
+	// 			if(thisFinishFlag) {
+	// 				if(!thisSuccess) {
+	// 					console.log('DID NOT SUCCEED ON SYNC');
+	// 					conclude();
+	// 				}
+	// 				clearInterval(thisInterval);
+	// 			}
+	// 			else if(readAgain){
+	// 				readAgain = false;
+	// 				patchBLE.readlink(data, function() {
 
-						// now we check the node's output Link at that index
-						// to check to see if it's changed to what WE said it is
+	// 					// now we check the node's output Link at that index
+	// 					// to check to see if it's changed to what WE said it is
 
-						var foundMatch = false;
+	// 					var foundMatch = false;
 
-						var linkArray = foundNodes[data.uuid].output[data.index].links;
-						for(var l=0;l<linkArray.length;l++) {
-							if(linkArray[l].id===data.link.id && linkArray[l].index===data.link.index) {
-								foundMatch = true;
-							}
-						}
+	// 					var linkArray = foundNodes[data.uuid].output[data.index].links;
+	// 					for(var l=0;l<linkArray.length;l++) {
+	// 						if(linkArray[l].id===data.link.id && linkArray[l].index===data.link.index) {
+	// 							foundMatch = true;
+	// 						}
+	// 					}
 
-						if(data.link.isAlive == foundMatch) {
-							thisFinishFlag = true;
-							thisSuccess = true;
+	// 					if(data.link.isAlive == foundMatch) {
+	// 						thisFinishFlag = true;
+	// 						thisSuccess = true;
 
-							conclude();
+	// 						conclude();
 
-							syncWebpage();
-						}
-						else {
-							readAgain = true;
-						}
-					});
-				}
-			}, 100);
-		}, function(){
-			console.log('failure writing to link');
-			conclude();
-		});
-	}, function(){
-		console.log('failure connecting');
-		conclude();
-	});
+	// 						syncWebpage();
+	// 					}
+	// 					else {
+	// 						readAgain = true;
+	// 					}
+	// 				});
+	// 			}
+	// 		}, 100);
+	// 	}, function(){
+	// 		console.log('failure writing to link');
+	// 		conclude();
+	// 	});
+	// }, function(){
+	// 	console.log('failure connecting');
+	// 	conclude();
+	// });
 }
 
 ////////////
@@ -247,45 +255,45 @@ function route(data) {
 
 function readAllLinks(_node) {
 
-	patchBLE.stopListening();
+	// patchBLE.stopListening();
 
-	patchBLE.connect(_node.uuid, function() {
+	// patchBLE.connect(_node.uuid, function() {
 
-		var onDone = function(){
-			syncWebpage();
-			patchBLE.disconnect(_node.uuid);
-			if(userWantsToScan) patchBLE.startListening();
-		};
+	// 	var onDone = function(){
+	// 		syncWebpage();
+	// 		patchBLE.disconnect(_node.uuid);
+	// 		if(userWantsToScan) patchBLE.startListening();
+	// 	};
 		
-		function readPort(currentIndex){
+	// 	function readPort(currentIndex){
 
-			if(currentIndex<_node.output.length) {
+	// 		if(currentIndex<_node.output.length) {
 
-				var msg = {
-					'uuid' : _node.uuid,
-					'index' : currentIndex,
-				};
+	// 			var msg = {
+	// 				'uuid' : _node.uuid,
+	// 				'index' : currentIndex,
+	// 			};
 
-				patchBLE.readlink(msg, function(){
+	// 			patchBLE.readlink(msg, function(){
 
-					// increment the index, and call this function again
-					readPort(currentIndex+1);
+	// 				// increment the index, and call this function again
+	// 				readPort(currentIndex+1);
 
-				},function(){
-					console.log('error reading link from node '+_node.uuid);
-					onDone();
-				});
-			}
-			else {
-				// we've read everything possible, so sync webpage
+	// 			},function(){
+	// 				console.log('error reading link from node '+_node.uuid);
+	// 				onDone();
+	// 			});
+	// 		}
+	// 		else {
+	// 			// we've read everything possible, so sync webpage
 
-				onDone();
-			}
-		}
+	// 			onDone();
+	// 		}
+	// 	}
 
-		readPort(0); // initiate feedback
+	// 	readPort(0); // initiate feedback
 
-	});
+	// });
 }
 
 /////////////////////////////////

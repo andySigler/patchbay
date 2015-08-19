@@ -13,6 +13,7 @@ function beginBLE(){
 		}
 		else {
 			BLE_IS_ENABLED = false
+			alert('Bluetooth not enabled');
 		}
 	},function (data){
 		console.log('error initializing BLE');
@@ -28,23 +29,18 @@ var restartListening;
 
 function startListening () {
 
-	if(patchBLE.connectionSize===0) {
+	if(BLE_IS_ENABLED && patchBLE.connectionSize===0) {
 
 		if(!patchBLE.isScanning) {
 
 			function onScanSuccess (data) {
 				if(data && data.status==='scanStarted') {
-					console.log('\n\n\n');
-					console.log('\t\tSTARTED');
-					console.log('\n\n\n');
 
 					patchBLE.isScanning = true;
 					patchBLE.doom('all');
 
-					// alert the parent
-					if(patchBLE.onScanStart && typeof patchBLE.onScanStart==='function') {
-						patchBLE.onScanStart();
-					}
+					// tell the front end that we're scanning
+					updateScanButton(true);
 				}
 				else if(data && data.status==='scanResult') {
 					// we found a new node
@@ -78,17 +74,11 @@ function stopListening () {
 		function successStopping (data) {
 			if(data && data.status==='scanStopped') {
 
-				console.log('\n\n\n');
-				console.log('\t\tSTOPPED');
-				console.log('\n\n\n');
-
 				patchBLE.isScanning = false;
 				patchBLE.immortal('all');
 
-				// alert the parent
-				if(patchBLE.onScanStop && typeof patchBLE.onScanStop==='function') {
-					patchBLE.onScanStop();
-				}
+				// tell the front end that we're scanning
+				updateScanButton(false);
 			}
 		}
 
@@ -108,6 +98,8 @@ function stopListening () {
 var isDiscoveringUUID = undefined;
 
 function onScannedPeripheral (peripheral) {
+
+	console.log('\t\t'+peripheral.address);
 
 	// only check out the new peripheral if we're ready
 	// aka, if we're supposed to be scanning, and if we're not currently
@@ -138,16 +130,13 @@ function onScannedPeripheral (peripheral) {
 					// this is called if the periphal was identified as a Patchbay node
 					var onSuccessDiscovery = function() {
 
-						console.log('discovery success');
-
 						// now add it to our global object of patchbay nodes
 						patchBLE.add(peripheral);
-						//startListening();
+						startListening();
 					}
 
 					// if it fails, ignore it for now on
 					var onFailure = function(){
-						console.log("discovery fail");
 						startListening();
 					}
 
@@ -217,11 +206,15 @@ var patchBLE = {
 				// give it it's first heartbeat
 				self.doom(periph.uuid);
 
-				// call the module's 'onDiscovery' event 
-				// if the container added the handler
-				if(patchBLE.onDiscovery && typeof patchBLE.onDiscovery==='function') {
-					patchBLE.onDiscovery(periph.patchbay);
-				}
+				console.log('found '+periph.patchbay.name+' ('+periph.patchbay.network+'-'+periph.patchbay.id+')');
+				console.log('\tUUID: '+periph.patchbay.uuid);
+
+				// setTimeout(function(){
+				// 	readAllLinks(thisNode);
+				// },2000);
+
+				// tell the interface
+				syncInterface();
 			}
 		}
 	},
@@ -235,7 +228,7 @@ var patchBLE = {
 
 		// if we're connected to it, disconnect
 		if(self.connectedPeripherals[uuid]) {
-			self.disconnect(uuid);
+			self.disconnect(uuid,undefined,true); // true means to .close() it
 		}
 
 		// erase the node from our Patchbay object
@@ -243,12 +236,8 @@ var patchBLE = {
 
 			delete self.scene[uuid]; // erase it based off UUID
 
-			// call the container's 'onErase' event 
-			if(patchBLE.onErase && typeof patchBLE.onErase==='function') {
-				var _msg = {}
-				_msg[uuid] = true;
-				patchBLE.onErase(_msg);
-			}
+			// tell the interface
+			syncInterface();
 		}
 		else console.log('error erasing '+uuid+': was not it scene');
 	},
@@ -277,7 +266,7 @@ var patchBLE = {
 	////////////
 	////////////
 
-	'disconnect' : function(uuid, onSuccess) {
+	'disconnect' : function(uuid, onSuccess, shouldClose) {
 
 		var self = patchBLE;
 
@@ -288,11 +277,11 @@ var patchBLE = {
 			};
 
 			function disconnectSuccess(data){
+				console.log(data.status+': '+data.address);
 				if(data && data.status==='disconnecting') {
-					//
 				}
 				else if(data && data.status==='disconnected') {
-					onDisconnect(uuid);
+					onDisconnect(uuid, shouldClose);
 					if(onSuccess && typeof onSuccess==='function') {
 						onSuccess();
 					}
@@ -301,12 +290,12 @@ var patchBLE = {
 
 			function disconnectError(){
 				console.log('error disconnecting: '+uuid);
-				onDisconnect(uuid);
+				onDisconnect(uuid, shouldClose);
 			}
 
 			bluetoothle.disconnect(disconnectSuccess, disconnectError, disconnectParams);
 		}
-		else if(self.scene[uuid]) onDisconnect(uuid);
+		else if(self.scene[uuid]) onDisconnect(uuid, shouldClose);
 		else console.log('error disconnecting '+uuid+': was not currently connected');
 	},
 
@@ -325,17 +314,30 @@ var patchBLE = {
 
 		else {
 
+			// save it to our list of connected nodes
+			// even if connection doesn't ever really happen
+			patchBLE.connectedPeripherals[uuid] = patchBLE.scene[uuid];
+
+			// if we don't connect after a slight delay, erase this node
+			var doNotErase = false;
+			setTimeout(function(){
+				if(!doNotErase) {
+					patchBLE.erase(uuid);
+				}
+			},2000);
+
 			var reconnectParams = {
 				'address' : uuid
 			};
 
 			function reconnectSuccess(data){
 				if(data && data.status==='connecting') {
-					//
+					console.log('connecting to '+uuid);
 				}
 				else if(data && data.status==='connected') {
-					// save it to our list of connected nodes
-					patchBLE.connectedPeripherals[uuid] = patchBLE.scene[uuid];
+					console.log('connected to '+uuid);
+
+					doNotErase = true; // we connected before the timeout, so don't erase this node
 
 					// erase it's 'death' timeout
 					patchBLE.immortal(uuid);
@@ -344,12 +346,14 @@ var patchBLE = {
 				}
 				else if(data && data.status==='disconnected') {
 					// unexpected disconnect
+					console.log('disconnected from '+uuid);
 					onDisconnect(uuid);
 				}
 			}
 
 			function reconnectError(data){
-				onDisconnect(uuid);
+				console.log('error reconnecting with '+uuid);
+				patchBLE.erase(uuid);
 				if(onFailure && typeof onFailure==='function') onFailure();
 			}
 
@@ -362,9 +366,12 @@ var patchBLE = {
 	////////////;
 	////////////
 
-	'death_interval' : 5000,
+	'death_interval' : 1000, // minimum death interval
+	'death_random_shake' : 2000, // randomized difference between death intervals
 
 	'doom' : function (uuid) {
+
+		console.log('dooming: '+uuid);
 
 		var self = patchBLE;
 
@@ -374,14 +381,18 @@ var patchBLE = {
 				var thisUUID = uuid;
 				return function(){
 
+					console.log('testing: '+uuid);
+
 					patchBLE.connect(thisUUID,
 						function(){
 							// success
+							console.log('saved: '+uuid);
 							patchBLE.doom(thisUUID);
 							patchBLE.disconnect(thisUUID);
 						},
 						function(){
 							// error
+							console.log('erasing: '+uuid);
 							patchBLE.disconnect(thisUUID);
 							patchBLE.erase(thisUUID);
 						});
@@ -394,7 +405,7 @@ var patchBLE = {
 
 				var thisDeath = createDeath(uuid);
 
-				var tempDeathInterval = self.death_interval + Math.floor(Math.random()*2000);
+				var tempDeathInterval = self.death_interval + Math.floor(Math.random()*self.death_random_shake);
 
 				self.scene[uuid].deathTimeout = setTimeout(thisDeath,tempDeathInterval);
 
@@ -406,7 +417,7 @@ var patchBLE = {
 
 					var thisInterval = createDeath(n);
 
-					var tempDeathInterval = self.death_interval + Math.floor(Math.random()*2000);
+					var tempDeathInterval = self.death_interval + Math.floor(Math.random()*self.death_random_shake);
 
 					self.scene[n].deathTimeout = setTimeout(thisInterval,tempDeathInterval);
 				}
@@ -420,6 +431,8 @@ var patchBLE = {
 	////////////
 
 	'immortal' : function (uuid) {
+
+		console.log('immortal: '+uuid);
 
 		var self = patchBLE;
 
@@ -612,16 +625,13 @@ var patchBLE = {
 // this is the only disconnect emitter given to a recognized Patchbay node
 // so it should be kept simple, and should clean things up
 
-function onDisconnect(uuid) {
+function onDisconnect(uuid, shouldClose) {
 
 	if(uuid) {
  
 		if(patchBLE.connectedPeripherals[uuid]) {
 			delete patchBLE.connectedPeripherals[uuid];// erase the node
 		}
-
-		// reset it's death timeout
-		patchBLE.doom(uuid);
 
 		// reset the 'length' of how many connected nodes we have
 		patchBLE.connectionSize = 0;
@@ -630,6 +640,36 @@ function onDisconnect(uuid) {
 	        	patchBLE.connectionSize++;
 	        }
 	    }
+
+		if(!shouldClose) {
+			// reset it's death timeout
+			patchBLE.doom(uuid);
+		}
+		else {
+			console.log('closing: '+uuid);
+
+			function closeSucces(data){
+				if(data && data.status==='closed') {
+					console.log('sucessfully closed '+uuid);
+
+					// erase it from memory
+					// so that we don't call .reconnect() inside discovery
+					if(alreadyConnected[uuid]){
+						delete alreadyConnected[uuid];
+					}
+				}
+			}
+
+			function closeError(){
+				console.log('error closing: '+uuid);
+			}
+
+			var closeParams = {
+				'address' : uuid
+			};
+
+			bluetoothle.close(closeSucces,closeError,closeParams);
+		}
 	}
 }
 
@@ -643,9 +683,8 @@ function onDiscoveryDisconnect(discover_success, onSuccess, onFailure) {
 
 	isDiscoveringUUID = undefined; // reset flag
 
-	if(patchBLE.onDiscoverStop && typeof patchBLE.onDiscoverStop==='function') {
-		patchBLE.onDiscoverStop();
-	}
+	// aler the interface
+	updateDiscoveryIcon(false);
 
 	// if it's ended successfully
 	// fire the event on success callback
@@ -677,16 +716,14 @@ var alreadyConnected = {};
 
 function discover (_p, onSuccess, onFailure) {
 
-	console.log('inside discovery');
+	console.log('discovering: '+_p.uuid);
 
 	isDiscoveringUUID = _p.uuid;
 
 	var currentlyConnected = false;
 
-	// alert the parent
-	if(patchBLE.onDiscoverStart && typeof patchBLE.onDiscoverStart==='function') {
-		patchBLE.onDiscoverStart();
-	}
+	// alert the interface
+	updateDiscoveryIcon(true);
 
 	////////////
 	////////////
@@ -739,24 +776,22 @@ function discover (_p, onSuccess, onFailure) {
 
 	function connectToIt() {
 
-		console.log('about to try connecting...');
+		console.log('attempting connection: '+isDiscoveringUUID);
 
 		var connectParams = {
 			'address' : isDiscoveringUUID
 		};
 
 		function connectSucces(data) {
+			console.log(data.status+': '+isDiscoveringUUID);
 			if(data && data.status==='connecting') {
-				console.log('trying to connect.....');
 			}
 			else if(data && data.status==='connected') {
-				console.log('SUCCESS connecting');
 				alreadyConnected[isDiscoveringUUID] = true;
 				currentlyConnected = true;
 				listServices();
 			}
 			else if(data && data.status==='disconnected') {
-				console.log('unexpected disconnect!!');
 				currentlyConnected = false;
 				finishDiscovery(false);
 			}
@@ -884,7 +919,6 @@ function discover (_p, onSuccess, onFailure) {
 							// we're done!
 
 							if(_p.patchbay.output.length+_p.patchbay.input.length) {
-								console.log('success reading services and chars');
 								getPortNames();
 							}
 							else finishDiscovery(false);
@@ -1024,8 +1058,19 @@ function discover (_p, onSuccess, onFailure) {
 
 					function onReadSuccess(data) {
 						if(data && data.status==='read') {
+
+							// convert the 64 base buffer to a base 8 buffer
+							var letterObject = bluetoothle.encodedStringToBytes(data.value);
+
+							// then convert those integers to a string
+							var realName = '';
+							for(var n in letterObject) {
+								realName += String.fromCharCode(letterObject[n]);
+							}
+
 							readCount++;
-							thisPort.name = data.value+''; // incase it's not a string
+							thisPort.name = realName; // incase it's not a string
+
 							readNextNameChar(_portsArray);
 						}
 					}
@@ -1052,7 +1097,6 @@ function discover (_p, onSuccess, onFailure) {
 				// already read OUTPUTs, so it's time to return
 				else if(readCount===readCountTotal){
 					// we're finished
-					console.log('SUCCESS MOTHA FUCKA');
 					finishDiscovery(true);
 				}
 				else {

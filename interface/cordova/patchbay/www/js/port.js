@@ -90,7 +90,7 @@ Port.prototype.drawName = function(){
 	}
 
 	var fontSize = Math.floor(this.scaler*this.size*.4);
-	this.ctx.font = fontSize+'px clearSans';
+	this.ctx.font = fontSize+'px Helvetica';
 	if(this.touched || this.hovered) this.ctx.fillStyle = 'white';
 	else this.ctx.fillStyle = 'rgb('+this.parent.c.r+','+this.parent.c.g+','+this.parent.c.b+')';;
 
