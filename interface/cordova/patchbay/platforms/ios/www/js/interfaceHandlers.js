@@ -8,11 +8,11 @@ function updateScanButton(state) {
 
 	if(butt.currentState) {
 		butt.style.backgroundColor = 'rgb(100,255,100)';
-		butt.innerHTML = 'Scan ON';
+		//butt.innerHTML = 'Scan ON';
 	}
 	else {
 		butt.style.backgroundColor = 'rgb(176,176,176)';
-		butt.innerHTML = 'Scan OFF';
+		//butt.innerHTML = 'Scan OFF';
 	}
 }
 

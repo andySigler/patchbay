@@ -98,7 +98,12 @@ Circle.prototype.drawArcs = function(){
 		var name_0 = arc_0.name;
 		var opacity = arc_0.scaler;
 		if(opacity>1) opacity = 1;
-		this.ctx.fillStyle = 'rgba('+arc_0.c.r+','+arc_0.c.g+','+arc_0.c.b+','+opacity+')';
+		if(arc_0.connected) {
+			this.ctx.fillStyle = 'rgba(255,255,255,'+opacity+')';
+		}
+		else {
+			this.ctx.fillStyle = 'rgba('+arc_0.c.r+','+arc_0.c.g+','+arc_0.c.b+','+opacity+')';
+		}
 		var xOffset_0;
 		if(arc_0.type=='input'){
 			xOffset_0 = (this.lineWidth*tempScaler*xOffsetScaler)*this.animPercent;
@@ -115,7 +120,12 @@ Circle.prototype.drawArcs = function(){
 			var name_1 = arc_1.name;
 			opacity = arc_1.scaler;
 			if(opacity>1) opacity = 1;
-			this.ctx.fillStyle = 'rgba('+arc_1.c.r+','+arc_1.c.g+','+arc_1.c.b+','+opacity+')';
+			if(arc_1.connected) {
+				this.ctx.fillStyle = 'rgba(255,255,255,'+opacity+')';
+			}
+			else {
+				this.ctx.fillStyle = 'rgba('+arc_1.c.r+','+arc_1.c.g+','+arc_1.c.b+','+opacity+')';
+			}
 			var xOffset_1;
 			if(arc_1.type=='input'){
 				xOffset_1 = (-this.lineWidth*tempScaler*xOffsetScaler)*(1-this.animPercent);

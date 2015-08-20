@@ -212,12 +212,12 @@ var patchBLE = {
 
 					function linksSuccess(){
 						console.log('read all links: '+periph.uuid);
-						patchBLE.disconnect(periph.uuid);
+						// patchBLE.disconnect(periph.uuid);
 					}
 
 					function linksFailure(){
 						console.log('failed reading all links: '+periph.uuid);
-						self.erase(periph.uuid);
+						// self.erase(periph.uuid);
 					}
 
 					patchBLE.readlinks(periph.uuid,'all',linksSuccess,linksFailure); // 'all' means it should read all output services
@@ -237,9 +237,7 @@ var patchBLE = {
 		var self = patchBLE;
 
 		// if we're connected to it, disconnect
-		if(self.connectedPeripherals[uuid]) {
-			self.disconnect(uuid,undefined,true); // true means to .close() it
-		}
+		self.disconnect(uuid, syncInterface, true); // true means to .close() it
 
 		// erase the node from our Patchbay object
 		if(uuid && self.scene[uuid]) {
@@ -332,6 +330,7 @@ var patchBLE = {
 			var doNotErase = false;
 			setTimeout(function(){
 				if(!doNotErase) {
+					console.log('connection timed out, erasing: '+uuid);
 					patchBLE.erase(uuid);
 				}
 			},2000);
@@ -346,6 +345,10 @@ var patchBLE = {
 				}
 				else if(data && data.status==='connected') {
 					console.log('connected to '+uuid);
+
+					// tell the interface we're connected
+					patchBLE.scene[uuid].patchbay.connected = true;
+					syncInterface();
 
 					doNotErase = true; // we connected before the timeout, so don't erase this node
 
@@ -462,7 +465,7 @@ var patchBLE = {
 
 	'readlinks' : function(uuid, index, onSuccess, onFailure) {
 
-		if(uuid && patchBLE.scene[uuid] && index) {
+		if(uuid && patchBLE.scene[uuid]) {
 
 			var shouldRecurse = false;
 
@@ -510,6 +513,7 @@ var patchBLE = {
 								else {
 									// we're done
 									syncInterface();
+									patchBLE.disconnect(uuid);
 									if(onSuccess && typeof onSuccess==='function') onSuccess();
 								}
 							}
@@ -536,11 +540,17 @@ var patchBLE = {
 					bluetoothle.read(readSuccess, readError, readParams);
 				}
 
-				// first, connect to it
-				patchBLE.connect(uuid, function(){
-					// second, expose it's outputs
-					patchBLE.expose(uuid,readValue,onFailure); // third, 'readValue' will read the links
-				}, onFailure);
+				if(!patchBLE.connectedPeripherals[uuid]) {
+					// first, connect to it
+					patchBLE.connect(uuid, function(){
+						// second, expose it's outputs
+						patchBLE.expose(uuid,readValue,onFailure); // third, 'readValue' will read the links
+					}, onFailure);
+				}
+				else {
+					// no need to connect and expose
+					readValue();
+				}
 			}
 			else {
 				console.log('bad index value: '+index);
@@ -568,14 +578,16 @@ var patchBLE = {
 					function writeSuccess(data) {
 
 						if(data && data.status==='written') {
+
+							console.log(data.status+': '+uuid);
 							// we're done
 							syncInterface();
 
-							patchBLE.disconnect(uuid,function(){
-								setTimeout(function(){
-									patchBLE.readlinks(uuid,index);
-								},1000);
-							});
+							setTimeout(function(){
+								patchBLE.readlinks(uuid,index,function(){
+									patchBLE.disconnect(uuid);
+								});
+							},400);
 
 							if(onSuccess && typeof onSuccess==='function') onSuccess();
 						}
@@ -603,11 +615,17 @@ var patchBLE = {
 					bluetoothle.write(writeSuccess, writeError, writeParams);
 				}
 
-				// first, connect to it
-				patchBLE.connect(uuid, function(){
-					// second, expose it's outputs
-					patchBLE.expose(uuid,writeValue,onFailure); // third, 'writeValue' will write to the links
-				}, onFailure);
+				if(!patchBLE.connectedPeripherals[uuid]) {
+					// first, connect to it
+					patchBLE.connect(uuid, function(){
+						// second, expose it's outputs
+						patchBLE.expose(uuid,writeValue,onFailure); // third, 'writeValue' will write to the links
+					}, onFailure);
+				}
+				else {
+					// no need to connect and expose
+					writeValue();
+				}
 			}
 			else {
 				console.log('bad index value: '+index);
@@ -715,7 +733,11 @@ var patchBLE = {
 
 function onDisconnect(uuid, shouldClose) {
 
-	if(uuid) {
+	if(uuid && patchBLE.scene[uuid]) {
+
+		// tell the interface we're disconnected
+		patchBLE.scene[uuid].patchbay.connected = false;
+		syncInterface();
  
 		if(patchBLE.connectedPeripherals[uuid]) {
 			delete patchBLE.connectedPeripherals[uuid];// erase the node
@@ -730,15 +752,17 @@ function onDisconnect(uuid, shouldClose) {
 	    }
 
 		if(!shouldClose) {
-			// reset it's death timeout
-			patchBLE.doom(uuid);
+			// only doom if we're currently scanning
+			if (patchBLE.isScanning) {
+				patchBLE.doom(uuid); // reset it's death timeout
+			}
 		}
 		else {
 			console.log('closing: '+uuid);
 
 			function closeSucces(data){
 				if(data && data.status==='closed') {
-					console.log('sucessfully closed '+uuid);
+					console.log('successfully closed '+uuid);
 
 					// erase it from memory
 					// so that we don't call .reconnect() inside discovery

@@ -365,8 +365,8 @@ function adjustCanvas(){
 			document.getElementById('container').className = 'middleScaler';
 		}
 
-		theWidth = canvas.parentNode.offsetWidth;
-		theHeight = Math.floor(theWidth*0.66);
+		theWidth = window.innerWidth;
+		theHeight = window.innerHeight;
 
 		canvas.width = theWidth;
 		canvas.height = theHeight;
@@ -376,7 +376,7 @@ function adjustCanvas(){
 		middleX = Math.floor(theWidth/2);
 		middleY = Math.floor(theHeight/2);
 
-		usedSize = Math.min(theWidth,theHeight*1.2);
+		usedSize = Math.min(theWidth,theHeight*1);
 
 		if(theWidth<theHeight){
 			var Xoffset = theWidth*.2;
@@ -412,6 +412,7 @@ function adjustCanvas(){
 	canvas.andyY = canPos[1];
 
 	document.getElementById('routerContainer').style.height = canvas.height+'px';
+	document.getElementById('routerContainer').style.width = canvas.width+'px';
 }
 
 window.onresize = adjustCanvas;

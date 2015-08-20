@@ -25,6 +25,8 @@ function Arc(_ctx,_parent,_type,_color,_name,_uuid,_id,_index){
 	this.radius;
 	this.portSize;
 
+	this.connected = false;
+
 	this.ports = [];
 
 	this.test = true;
@@ -46,6 +48,8 @@ Arc.prototype.addPort = function(index){
 ////////////////////////////////////
 
 Arc.prototype.handleMeta = function(data){
+
+	this.connected = data.connected;
 
 	var portArray = data[this.type];
 

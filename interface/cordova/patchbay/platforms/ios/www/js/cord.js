@@ -37,7 +37,7 @@ function Cord(_ctx,outPort,inPort,name){
 Cord.prototype.update = function(){
 
 	if(this.stateless) {
-		this.deathOpacity *= 0.97;
+		this.deathOpacity *= 0.98;
 
 		if(this.deathOpacity < 0.01) {
 			this.finished = true;
