@@ -16,10 +16,15 @@ class Port{
   public:
   	
   	Port();
+
+    void init();
+
+    boolean update();
     void createLinks(byte _totalLinks);
   	byte getValue();
-  	void setValue(byte _value);
-  	boolean hasChanged();
+  	void setTargetValue(byte _value);
+
+    void setSlide(float _slide);
 
     void ble_service(byte _name_ID,byte _links_tx_ID,byte _links_rx_ID);
     boolean parseRXChar(char * _hexString);
@@ -35,9 +40,6 @@ class Port{
         // new radio messages are passed here to be tested
         void newMessage(byte ID,byte totalValues,byte *values);
 
-        // loop through links, reading it's value if it's changed
-        void readLinks();
-
         boolean createLink(byte _ID,byte _INDEX);
         boolean killLink(byte _ID,byte _INDEX);
 
@@ -47,8 +49,15 @@ class Port{
 
   private:
 
-    byte theValue;
-    boolean didChange;
+    boolean smoothValue();
+
+    // loop through links, reading it's value if it's changed
+    void readLinks();
+
+    float theValue;
+    byte targetValue;
+
+    float theSlide;
 
     Link *theLinks;
 

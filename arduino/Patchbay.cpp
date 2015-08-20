@@ -28,6 +28,10 @@ Patchbay::Patchbay(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,by
 	if(totalInputs>0){
 		theInputs = (Port *)malloc(sizeof(Port) * totalInputs);
 		inChangeFlag = (boolean *)malloc(sizeof(boolean) * totalInputs);
+
+		for(byte i=0;i<totalInputs;i++){
+			theInputs[i].init();
+		}
 	}
 	if(totalOutputs>0){
 		theOutputs = (Port *)malloc(sizeof(Port) * totalOutputs);
@@ -36,6 +40,7 @@ Patchbay::Patchbay(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,by
 		// each OUTPUT has a certain number of possible links.
 		// i'm not sure if this should be an optional thing or not
 		for(byte i=0;i<totalOutputs;i++){
+			theOutputs[i].init();
 			theOutputs[i].createLinks(maxLinks); // defaults to 5 links per output
 		}
 	}
@@ -57,7 +62,7 @@ void Patchbay::begin() {
 	BLEConnected = false;
 
 	BLE_connected_stamp = 0; // time stamp for last time we connected
-	BLE_timeout = 5000; // will only stay connected for 5 seconds at most
+	BLE_timeout = 5000; // max BLE connect time in milliseconds, then this device will disconnect
 
 	BLE_interval = 200; // how often it will check the BLE Characteristics
 	BLE_timestamp = 0; // time stamp for the last time we checked our BLE stuff
@@ -71,6 +76,8 @@ void Patchbay::begin() {
 	Serial.println(F("starting Patchbay"));
 	Serial.println(F("starting BLE..."));
 	#endif
+
+	delay(200); // arbitrary delay to help SPI settle after boot
 
 	// set device name and all Services needed
 	setupBLE();
@@ -170,12 +177,9 @@ boolean Patchbay::updateRFM69() {
 	boolean anOutputHasChanged = false;
 
 	for(byte i=0;i<totalOutputs;i++){
-		// check to see if each Link has changed
-		// if the Link has changed, the Link will set the Port's value
-		theOutputs[i].readLinks();
-		if(theOutputs[i].hasChanged()){
-			outChangeFlag[i] = true;
 
+		if(theOutputs[i].update()){
+			outChangeFlag[i] = true;
 			anOutputHasChanged = true; // return true to the sketch, so we know an outputs changed
 		}
 		else {
@@ -185,9 +189,9 @@ boolean Patchbay::updateRFM69() {
 
 	// update the INPUTs and bursts
 	for(byte i=0;i<totalInputs;i++){
-		if(theInputs[i].hasChanged()){
-			inChangeFlag[i] = true;
 
+		if(theInputs[i].update()){
+			inChangeFlag[i] = true;
 			resetBurst(); // this reset the radio's broadcasting burst
 		}
 		else {
@@ -330,7 +334,7 @@ void Patchbay::inputWrite(byte _inIndex, byte _newValue){
 		else if(_newValue<0){
 			_newValue=0;
 		}
-		theInputs[_inIndex].setValue(_newValue);
+		theInputs[_inIndex].setTargetValue(_newValue);
 	}
 }
 
@@ -346,7 +350,7 @@ void Patchbay::outputWrite(byte _outIndex, byte _newValue){
 		else if(_newValue<0){
 			_newValue=0;
 		}
-		theOutputs[_outIndex].setValue(_newValue);
+		theOutputs[_outIndex].setTargetValue(_newValue);
 	}
 }
 
@@ -630,6 +634,26 @@ void Patchbay::outputName(byte index, char * msg){
 		#if defined(Patchbay_verbose)
 		Serial.print(F("Success writing to char? "));Serial.println(success);
 		#endif
+	}
+}
+
+///////////
+///////////
+///////////
+
+void Patchbay::inputSmooth(byte _inIndex, float _slide){
+	if(_inIndex<totalInputs) {
+		theInputs[_inIndex].setSlide(_slide);
+	}
+}
+
+///////////
+///////////
+///////////
+
+void Patchbay::outputSmooth(byte _outIndex, float _slide){
+	if(_outIndex<totalOutputs) {
+		theOutputs[_outIndex].setSlide(_slide);
 	}
 }
 

@@ -17,10 +17,17 @@
 ///////////
 
 Link::Link(){
+}
+
+///////////
+///////////
+///////////
+
+void Link::init(){
 	theValue = 0;
 	didChange = false;
 	alive= false;
-}
+};
 
 ///////////
 ///////////

@@ -17,12 +17,22 @@
 ///////////
 
 Port::Port(){
-	didChange = true;
+}
+
+///////////
+///////////
+///////////
+
+void Port::init(){
 	totalLinks = 0;
 
     name_ID = 0;
     links_tx_ID = 0;
     links_rx_ID = 0;
+
+    theSlide = 1;
+    targetValue = 0;
+    theValue = 0;
 }
 
 ///////////
@@ -34,6 +44,7 @@ void Port::createLinks(byte _totalLinks){
 	if(totalLinks>0){
 		theLinks = (Link *)malloc(sizeof(Link) * _totalLinks);
 		for(byte i=0;i<totalLinks;i++) {
+			theLinks[i].init();
 			theLinks[i].kill(); // initialize all links to be empty
 		}
 	}
@@ -43,29 +54,84 @@ void Port::createLinks(byte _totalLinks){
 ///////////
 ///////////
 
-byte Port::getValue(){
-	return theValue;
-}
+boolean Port::update(){
 
-///////////
-///////////
-///////////
-
-void Port::setValue(byte _value){
-	if(theValue!=_value){
-		didChange = true;
+	// if there are links, update the target value
+	if(totalLinks>0) {
+		readLinks();
 	}
-	theValue = _value;
+
+	// change the actual value we're using (based off target)
+	return smoothValue(); // returns a 'didChange' flag
 }
 
 ///////////
 ///////////
 ///////////
 
-boolean Port::hasChanged(){
-	boolean currentState = didChange;
-	didChange = false;
-	return currentState;
+byte Port::getValue(){
+	return (byte)theValue;
+}
+
+///////////
+///////////
+///////////
+
+void Port::setTargetValue(byte _value){
+	targetValue = _value;
+}
+
+///////////
+///////////
+///////////
+
+void Port::setSlide(float _slide){
+	if(_slide>=1) {
+		theSlide = _slide;
+	}
+	else {
+		theSlide = 1;
+	}
+}
+
+///////////
+///////////
+///////////
+
+// take the current target value, and smooth it
+boolean Port::smoothValue(){
+
+	/*
+		y (n) = y (n-1) + ((x (n) - y (n-1))/slide)
+	*/
+
+	float oldValue = theValue;
+
+	float diff = ((float)targetValue) - theValue;
+
+	if(abs(diff)>0.001) {
+		float stepAmount = diff / theSlide;
+
+		theValue = theValue + stepAmount;
+
+		if(theValue<0) {
+			theValue = 0;
+		}
+		if(theValue>255) {
+			theValue = 255;
+		}
+	}
+	else {
+		theValue = (float)targetValue;
+	}
+
+	// then finally check to see if it has changed
+	if(theValue!=oldValue){
+		return true;			// did we change?
+	}
+	else {
+		return false;			// did we change?
+	}
 }
 
 ///////////
@@ -80,7 +146,7 @@ void Port::readLinks(){
 	for(byte i=0;i<totalLinks;i++){
 		if(theLinks[i].isAlive()){
 			if(theLinks[i].hasChanged()){ // if the link's value has been updated...
-				setValue(theLinks[i].readValue()); // ... then read from the link
+				setTargetValue(theLinks[i].readValue()); // ... then read from the link
 			}
 		}
 		else{

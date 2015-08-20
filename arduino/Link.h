@@ -16,6 +16,8 @@ class Link{
   	
 	Link();
 
+	void init();
+
 	void create(byte _hardwareAddress,byte _inputIndex);
 	void kill();
 	void writeValue(byte _value);

@@ -51,10 +51,12 @@ class Patchbay{
   	void inputWrite(byte _inIndex, byte _newValue);
     byte inputRead(byte _inIndex);
     boolean inputChanged(byte _outIndex);
+    void inputSmooth(byte _inIndex, float _slide);
 
   	void outputWrite(byte _outIndex, byte _newValue);
     byte outputRead(byte _outIndex);
     boolean outputChanged(byte _outIndex);
+    void outputSmooth(byte _outIndex, float _slide);
 
     // make/break a link from local-output to any input
   	void link(byte _outputIndex, boolean _alive, byte _ID, byte _INDEX);
@@ -83,7 +85,7 @@ class Patchbay{
     unsigned long BLE_timestamp;
     unsigned long BLE_connected_stamp;
     int BLE_interval;
-    int BLE_timeout;
+    unsigned long BLE_timeout;
     int BLE_delay;
 
     // some BLE communication helper functions, for using the SPI Friend from Adafruit
