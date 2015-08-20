@@ -99,8 +99,6 @@ var isDiscoveringUUID = undefined;
 
 function onScannedPeripheral (peripheral) {
 
-	console.log('\t\t'+peripheral.address);
-
 	// only check out the new peripheral if we're ready
 	// aka, if we're supposed to be scanning, and if we're not currently
 	// trying to discover another peripheral
@@ -209,9 +207,21 @@ var patchBLE = {
 				console.log('found '+periph.patchbay.name+' ('+periph.patchbay.network+'-'+periph.patchbay.id+')');
 				console.log('\tUUID: '+periph.patchbay.uuid);
 
-				// setTimeout(function(){
-				// 	readAllLinks(thisNode);
-				// },2000);
+				// read all the link values of each of it's output services
+				setTimeout(function(){
+
+					function linksSuccess(){
+						console.log('read all links: '+periph.uuid);
+						patchBLE.disconnect(periph.uuid);
+					}
+
+					function linksFailure(){
+						console.log('failed reading all links: '+periph.uuid);
+						self.erase(periph.uuid);
+					}
+
+					patchBLE.readlinks(periph.uuid,'all',linksSuccess,linksFailure); // 'all' means it should read all output services
+				},200);
 
 				// tell the interface
 				syncInterface();
@@ -366,8 +376,8 @@ var patchBLE = {
 	////////////;
 	////////////
 
-	'death_interval' : 1000, // minimum death interval
-	'death_random_shake' : 2000, // randomized difference between death intervals
+	'death_interval' : 10000, // minimum death interval
+	'death_random_shake' : 10000, // randomized difference between death intervals
 
 	'doom' : function (uuid) {
 
@@ -450,165 +460,243 @@ var patchBLE = {
 	////////////
 	////////////
 
-	'readlink' : function(data, onSuccess, onFailure) {
+	'readlinks' : function(uuid, index, onSuccess, onFailure) {
 
-		// var self = patchBLE;
+		if(uuid && patchBLE.scene[uuid] && index) {
 
-		// /*
+			var shouldRecurse = false;
 
-		// 	var data = {
-		// 		'uuid' : String,
-		// 		'index' : Number
-		// 	};
+			if(index==='all') {
+				index = 0;
+				shouldRecurse = true;
+			}
 
-		// */
+			var thisNode = patchBLE.scene[uuid].patchbay;
 
-		// // then connect to the peripheral
+			if(!isNaN(index) && index<thisNode.output.length) {
 
-		// if(data.uuid && self.connectedPeripherals[data.uuid]) {
-			
-		// 	var thisNode = self.connectedPeripherals[data.uuid].patchbay;
+				// the function that is (potentially) recursed upon to read the characteristic
+				function readValue(){
 
-		// 	// read from the the next OUTPUT
-		// 	if(!isNaN(data.index) && thisNode.output[data.index]) {
+					var thisOutput = thisNode.output[index];
+					
+					function readSuccess(data) {
 
-		// 		var thisOutput = thisNode.output[data.index];
+						if(data && data.status==='read') {
 
-		// 		var thisCharacteristic = thisOutput.characteristics.links_rx;
+							// convert the 64 base buffer to a base 8 buffer
+							var byteArray = bluetoothle.encodedStringToBytes(data.value);
 
-		// 		console.log('about to read');
+							// overwrite and save the new link values
+							thisOutput.links = [];
 
-		// 		// read from the characteristic
-		// 		bluetoothle.read( data.uuid, function (error, data) {
+							// each links_rx characteristic holds 10 bytes (for 5 max links)
+							// [ id , index , id , index , etc..... ]
+							for(var i=0;i<10;i+=2) {
+								var tempLink = {
+									'id' : byteArray[i],
+									'index' : byteArray[i+1]
+								};
 
-		// 			if(error) console.log(error);
+								thisOutput.links.push(tempLink);
+							}
 
-		// 			if(data && Buffer.isBuffer(data)) {
+							if(shouldRecurse) {
+								index++;
+								if(index<thisNode.output.length) {
+									// recurse
+									readValue();
+								}
+								else {
+									// we're done
+									syncInterface();
+									if(onSuccess && typeof onSuccess==='function') onSuccess();
+								}
+							}
+							else {
+								// we're done
+								syncInterface();
+								if(onSuccess && typeof onSuccess==='function') onSuccess();
+							}
+						}
+					}
 
-		// 				console.log('got data:');
-		// 				console.log(data);
+					function readError(error){
+						console.log('error reading: '+uuid+' @ index: '+index);
+						console.log(error);
+						if(onFailure && typeof onFailure==='function') onFailure();
+					}
 
-		// 				// reset it's array of current links to an empty array 
-		// 				thisOutput.links = [];
+					var readParams = {
+						'address' : uuid,
+						'serviceUuid' : thisOutput.uuid,
+						'characteristicUuid' : thisOutput.characteristics.links_rx.uuid
+					};
 
-		// 				// increment by 2 [ID-index]
-		// 				for(var i=0;i<data.length;i+=2) {
+					bluetoothle.read(readSuccess, readError, readParams);
+				}
 
-		// 					var tempID = data[i];
-		// 					var tempIndex = data[i+1];
-
-		// 					if(!isNaN(tempID) && !isNaN(tempIndex)) {
-
-		// 						// ignore values of 255
-		// 						if(tempID!==255 && tempIndex!==255) {
-
-		// 							// save the ID and index as a new link for this Output
-		// 							thisOutput.links.push({
-		// 								'id' : tempID,
-		// 								'index' : tempIndex
-		// 							});
-		// 						}
-		// 					}
-		// 				}
-
-		// 				if(onSuccess) onSuccess();
-		// 			}
-		// 			else {
-		// 				console.log('bad buffer');
-		// 				console.log(data);
-		// 				if(onFailure) onFailure();
-		// 			}
-		// 		});
-		// 	}
-
-		// }
-		// else {
-		// 	console.log("not currently connected to "+data.uuid);
-		// 	if(onFailure) onFailure();
-		// }
+				// first, connect to it
+				patchBLE.connect(uuid, function(){
+					// second, expose it's outputs
+					patchBLE.expose(uuid,readValue,onFailure); // third, 'readValue' will read the links
+				}, onFailure);
+			}
+			else {
+				console.log('bad index value: '+index);
+			}
+		}
 	},
 
 	////////////
 	////////////
 	////////////
 
-	'writelink' : function(data, onSuccess, onFailure) {
+	'writelink' : function(uuid, index, linkData, onSuccess, onFailure) {
 
-		// var self = patchBLE;
+		if(linkData && !isNaN(linkData.id) && !isNaN(linkData.index) && uuid && patchBLE.scene[uuid]) {
 
-		// /*
+			var thisNode = patchBLE.scene[uuid].patchbay;
 
-		// 	var data = {
-		// 		'uuid' : String,
-		// 		'index' : Number,
-		// 		'link' : {
-		// 			'id' : Number,
-		// 			'index' : Number,
-		// 			'isAlive' : Boolean,
-		// 		}
-		// 	};
+			if(!isNaN(index) && index<thisNode.output.length) {
 
-		// */
+				// the function that is (potentially) recursed upon to read the characteristic
+				function writeValue(){
 
-		// // create a buffer to hold the three bytes
+					var thisOutput = thisNode.output[index];
+					
+					function writeSuccess(data) {
 
-		// if(data && data.uuid && !isNaN(data.index) && data.link && self.scene[data.uuid]) {
+						if(data && data.status==='written') {
+							// we're done
+							syncInterface();
 
-		// 	// ID - Index - isAlive
-		// 	var buffArray = [];
+							patchBLE.disconnect(uuid,function(){
+								setTimeout(function(){
+									patchBLE.readlinks(uuid,index);
+								},1000);
+							});
 
-		// 	buffArray[0] = data.link.id;
-		// 	buffArray[1] = data.link.index;
-		// 	buffArray[2] = data.link.isAlive ? 1 : 0;
+							if(onSuccess && typeof onSuccess==='function') onSuccess();
+						}
+					}
 
-		// 	if(!isNaN(buffArray[0]) && !isNaN(buffArray[1]) && !isNaN(buffArray[2])) {
+					function writeError(error){
+						console.log('error writing: '+uuid+' @ index: '+index);
+						console.log(error);
+						if(onFailure && typeof onFailure==='function') onFailure();
+					}
 
-		// 		var buf = new Buffer(buffArray);
+					var buffArray = [
+						linkData.id,
+						linkData.index,
+						linkData.isAlive ? 1 : 0
+					];
 
-		// 		if(self.connectedPeripherals[data.uuid]) {
+					var writeParams = {
+						'address' : uuid,
+						'serviceUuid' : thisOutput.uuid,
+						'characteristicUuid' : thisOutput.characteristics.links_tx.uuid,
+						'value' : bluetoothle.bytesToEncodedString(buffArray)
+					};
 
-		// 			var tempNode = self.connectedPeripherals[data.uuid].patchbay;
+					bluetoothle.write(writeSuccess, writeError, writeParams);
+				}
 
-		// 			if(tempNode.output[data.index]) {
-
-		// 				var theChar = tempNode.output[data.index].characteristics.links_tx;
-
-		// 				// now write to the Char
-		// 				theChar.write(buf, true, function (error) {
-		// 					if(error) {
-		// 						console.log("error writing");
-		// 						console.log(error);
-		// 						if(onFailure) onFailure();
-		// 					}
-		// 					else {
-		// 						if(onSuccess) onSuccess();
-		// 					}
-		// 				});
-		// 			}
-		// 			else {
-		// 				console.log('output index out of bounds: '+data.index);
-		// 				if(onFailure) onFailure();
-		// 			}
-		// 		}
-		// 		else {
-		// 			console.log('not connected to '+data.uuid);
-		// 			if(onFailure) onFailure();
-		// 		};
-		// 	}
-		// 	// failure, bad data
-		// 	else {
-		// 		console.log("bad data 2");
-		// 		console.log(JSON.stringify(data,undefined,2));
-		// 		if(onFailure) onFailure();
-		// 	}
-		// }
-		// // failure, bad data
-		// else {
-		// 	console.log("bad data 1");
-		// 	console.log(JSON.stringify(data,undefined,2));
-		// 	if(onFailure) onFailure();
-		// }
+				// first, connect to it
+				patchBLE.connect(uuid, function(){
+					// second, expose it's outputs
+					patchBLE.expose(uuid,writeValue,onFailure); // third, 'writeValue' will write to the links
+				}, onFailure);
+			}
+			else {
+				console.log('bad index value: '+index);
+			}
+		}
 		
+	},
+
+	////////////
+	////////////
+	////////////
+
+	// this function takes a node, and reads all it's OUTPUT services and link characteristics
+	// because we can't read/write with any of them until we re-discover :(
+	'expose' : function(uuid, onSuccess, onFailure) {
+
+		if(uuid && patchBLE.scene[uuid] && patchBLE.connectedPeripherals[uuid]) {
+
+			var thisNode = patchBLE.scene[uuid].patchbay;
+
+			// get an array of this node's output uuid's
+			var servicesArray = [];
+			for(var i=0;i<thisNode.output.length;i++) {
+				servicesArray.push(thisNode.output[i].uuid);
+			}
+
+			if(!servicesArray.length) {
+				console.log('node '+uuid+' has no outputs');
+				if(onFailure && typeof onFailure==='function') onFailure();
+			}
+			else {
+
+				var currentOutput = -1;
+
+				function getCharacteristics(){
+
+					currentOutput++;
+
+					if(currentOutput<servicesArray.length) {
+
+						var charParams = {
+							'address' : uuid,
+							'serviceUuid' : servicesArray[currentOutput],
+							'characteristicUuids' : ['1111','1112']	// only look for links_rx and links_tx characteristics
+						};
+
+						function charSuccess(data) {
+							if(data && data.status==='characteristics') {
+								getCharacteristics();				// recursion
+							}
+						}
+
+						function charError(data) {
+							console.log('error reading characteristics');
+							console.log(data);
+							if(onFailure && typeof onFailure==='function') onFailure();
+						}
+
+						// get the services
+						bluetoothle.characteristics(charSuccess, charError, charParams);
+					}
+					else {
+						// we're done
+						if(onSuccess && typeof onSuccess==='function') onSuccess();
+					}
+				}
+
+
+				function serviceSuccess(data) {
+					if(data && data.status==='services' && data.serviceUuids) {
+						getCharacteristics();			// init characteristic recursion
+					}
+				}
+
+				function serviceError(data) {
+					console.log('error reading services');
+					console.log(data);
+					if(onFailure && typeof onFailure==='function') onFailure();
+				}
+
+				var serviceParams = {
+					'address' : uuid,
+					'services' : servicesArray			// this node's uuid's
+				};
+
+				// get the services
+				bluetoothle.services(serviceSuccess, serviceError, serviceParams);
+			}
+		}
 	}
 
 	////////////
@@ -749,7 +837,7 @@ function discover (_p, onSuccess, onFailure) {
 
 					setTimeout(function(){
 						onDiscoveryDisconnect(fullyDiscovered, onSuccess, onFailure);
-					},1000);
+					},200);
 				}
 			}
 

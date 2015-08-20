@@ -45,13 +45,9 @@ function setupUI(){
 
 function syncInterface() {
 
-	console.log('\n\nSYNCING NODES\n\n');
-
 	// passes total port amount for each node, and eventually a name for each port
 	updateNodes(patchBLE.scene);
-
-	console.log('\n\nSYNCING CONNECTIONS\n\n');
-
+	
 	// // passes master list of all connections (between an input and an output)
 	updateConnections(patchBLE.scene);
 }
@@ -61,12 +57,7 @@ function syncInterface() {
 //////////////
 
 function flushScene() {
-	var msg = {
-		'type' : 'flush',
-		'data' : {}
-	};
-
-	console.log(msg);
+	patchBLE.flush();
 }
 
 //////////////
@@ -74,32 +65,7 @@ function flushScene() {
 //////////////
 
 function readLinks(uuid) {
-	var msg = {
-		'type' : 'readlinks',
-		'data' : {
-			'uuid' : uuid
-		}
-	};
-
-	console.log(msg);
-}
-
-//////////////
-//////////////
-//////////////
-
-function refresh(){
-	while(outCircle.arcs.length) {
-		outCircle.deleteArc(outCircle.arcs[0].uuid);
-		inCircle.deleteArc(inCircle.arcs[0].uuid);
-	}
-
-	var msg = {
-		'type' : 'refresh',
-		'data' : {}
-	};
-
-	console.log(msg);
+	patchBLE.readlinks(uuid,'all');
 }
 
 ////////////
@@ -130,23 +96,17 @@ function sendRoute(outputUUID, inputUUID, inputIndex, outputIndex, isAlive){
 
 	if(!isNaN(inputID) && !isNaN(outputID)) {
 
-		var msg = {
-			'type':'route',
-			'data':{
-				'uuid' : outputUUID,
-				'index' : Number(outputIndex),
-				'link' : {
-					'id' : Number(inputID),
-					'index' : Number(inputIndex),
-					'isAlive' : isAlive,
-				}
-			}
+		var linkData = {
+			'id' : Number(inputID),
+			'index' : Number(inputIndex),
+			'isAlive' : isAlive,
 		};
 
-		console.log(msg);
+		patchBLE.writelink(outputUUID, Number(outputIndex), linkData);
 
 	    var tempName = Number(outputID)+'/'+Number(inputID)+'__'+Number(inputIndex)+'/'+Number(outputIndex);
 
+	    // create the fading green cord for user feedback
 	    if(statelessConnections[tempName]) delete statelessConnections[tempName]
     	statelessConnections[tempName] = new Cord(context,outPort,inPort,tempName);
     	statelessConnections[tempName].stateless = true;
