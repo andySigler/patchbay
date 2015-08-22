@@ -57,7 +57,8 @@ function startListening () {
 			}
 
 			function onScannError (data) {
-				console.log('error starting scan :(');
+				console.log('error starting scan');
+				console.log(data);
 			}
 
 			bluetoothle.startScan( onScanSuccess , onScannError);
@@ -159,15 +160,113 @@ function onScannedPeripheral (peripheral) {
 					patchBLE.doom(peripheral.uuid);
 				}
 			}
+
+			// name didn't match
 			else {
-				// ignore it
-				patchBLE.ignore_peripherals[peripheral.uuid] = peripheral;
+				// patchBLE.ignore_peripherals[peripheral.uuid] = true;
+				tryResettingTheName(peripheral.uuid);
 			}
 		}
+
+		// name didn't exist
 		else {
-			// ignore it
-			patchBLE.ignore_peripherals[peripheral.uuid] = peripheral;
+			// patchBLE.ignore_peripherals[peripheral.uuid] = true;
+			tryResettingTheName(peripheral.uuid);
 		}
+	}
+}
+
+/////////////////////////////////
+/////////////////////////////////
+/////////////////////////////////
+
+var alreadTriedResetting = {};
+
+function tryResettingTheName(uuid) {
+
+	if(alreadTriedResetting[uuid] && !patchBLE.ignore_peripherals[uuid]) {
+		console.log('ignoring: '+uuid);
+		patchBLE.ignore_peripherals[uuid] = true;
+	}
+	else {
+
+		stopListening();
+
+		alreadTriedResetting[uuid] = true;
+
+		// connect, then disconnect, then close
+
+		function closeIt(){
+
+			function closeSuccess(data) {
+				if(data && data.status==='closed') {
+					console.log('successfully closed '+uuid);
+					startListening();
+				}
+			}
+
+			function closeError(data) {
+				console.log(data);
+				startListening();
+			}
+
+			var closeParams = {
+				'address' : uuid
+			};
+
+			bluetoothle.close(closeSuccess, closeError, closeParams);
+		}
+
+		function disconnectFromIt(isConnected){
+			function disconnectSuccess(data) {
+				if(data && data.status==='disconnected') {
+
+					if(isConnected) closeIt();
+					else startListening();
+				}
+			}
+
+			function disconnectError(data) {
+				if(isConnected) closeIt();
+				else startListening();
+			}
+
+			var disconnectParams = {
+				'address' : uuid
+			};
+
+			bluetoothle.disconnect(disconnectSuccess, disconnectError, disconnectParams);
+		}
+
+		function connectToIt(){
+
+			var didConnect = false;
+
+			setTimeout(function(){
+				if(!didConnect) {
+					disconnectFromIt(false);
+				}
+			},2000);
+
+			function connectSuccess(data) {
+				if(data && data.status==='connected') {
+					didConnect = true;
+					disconnectFromIt();
+				}
+			}
+
+			function connectError(data) {
+				console.log(data);
+			}
+
+			var connectParams = {
+				'address' : uuid
+			};
+
+			bluetoothle.connect(connectSuccess, connectError, connectParams);
+		}
+
+		connectToIt();
 	}
 }
 
@@ -793,7 +892,7 @@ function onDisconnect(uuid, shouldClose) {
 					}
 
 					// restart listening so we can regain it if it's still around
-					startListening();
+					if(user_wants_to_scan) startListening();
 				}
 			}
 
