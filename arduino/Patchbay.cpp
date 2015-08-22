@@ -57,7 +57,7 @@ void Patchbay::begin() {
 	sendCount = 0;
 	sendThresh = 10; // how many times it will burst
 	sendStamp = 0;
-	sendInterval = 25; // milliseconds between bursting broadcasts
+	sendInterval = 10; // milliseconds between bursting broadcasts
 
 	BLEConnected = false;
 
