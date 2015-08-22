@@ -176,12 +176,22 @@ Mouse.prototype.doubletapEvent = function(_x,_y){
 	var uuid = undefined;
 
 	if(outDistance / outRadius < 0.4) {
-		// we're inside the OUT circle
-		uuid = outCircle.arcs[outCircle.arcOffset].uuid;
+
+		var currentIndex = outCircle.arcOffset;
+
+		if(outCircle.animPercent>0.5) {
+			currentIndex = (currentIndex + 1) % outCircle.arcs.length;
+		}
+		uuid = outCircle.arcs[currentIndex].uuid;
 	}
 	else if(inDistance / inRadius < 0.4) {
 		// we're inside the IN circle
-		uuid = inCircle.arcs[inCircle.arcOffset].uuid;
+		var currentIndex = inCircle.arcOffset;
+
+		if(inCircle.animPercent>0.5) {
+			currentIndex = (currentIndex + 1) % inCircle.arcs.length;
+		}
+		uuid = inCircle.arcs[currentIndex].uuid;
 	}
 
 	if(uuid) {

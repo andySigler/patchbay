@@ -10,6 +10,12 @@ function beginBLE(){
 		console.log('success initializing BLE');
 		if(data.status==='enabled') {
 			BLE_IS_ENABLED = true;
+
+			setInterval(function(){
+				if(user_wants_to_scan && patchBLE.isScanning && !isDiscoveringUUID) {
+					startListening();
+				}
+			},5000);
 		}
 		else {
 			BLE_IS_ENABLED = false
@@ -29,7 +35,7 @@ var restartListening;
 
 function startListening () {
 
-	if(BLE_IS_ENABLED && patchBLE.connectionSize===0) {
+	if(BLE_IS_ENABLED) {
 
 		if(!patchBLE.isScanning) {
 
@@ -47,20 +53,25 @@ function startListening () {
 					data.uuid = data.address;  // this library calls UUID an 'address'
 					onScannedPeripheral(data);
 				}
+				else console.log(data);
 			}
 
 			function onScannError (data) {
 				console.log('error starting scan :(');
 			}
 
-			bluetoothle.startScan( onScanSuccess , onScannError );
+			bluetoothle.startScan( onScanSuccess , onScannError);
 		}
 		else {
+			console.log('already scanning, restarting...');
 			// we're already scanning so restart it up again
 			stopListening();
 			clearTimeout(restartListening);
-			restartListening = setTimeout(startListening,1000);
+			restartListening = setTimeout(startListening,100);
 		}
+	}
+	else {
+		console.log('BLE not enabled')
 	}
 }
 
@@ -99,6 +110,8 @@ var isDiscoveringUUID = undefined;
 
 function onScannedPeripheral (peripheral) {
 
+	if(peripheral.name) console.log('\t\t'+peripheral.name);
+
 	// only check out the new peripheral if we're ready
 	// aka, if we're supposed to be scanning, and if we're not currently
 	// trying to discover another peripheral
@@ -130,12 +143,12 @@ function onScannedPeripheral (peripheral) {
 
 						// now add it to our global object of patchbay nodes
 						patchBLE.add(peripheral);
-						startListening();
+						if(user_wants_to_scan) startListening();
 					}
 
 					// if it fails, ignore it for now on
 					var onFailure = function(){
-						startListening();
+						if(user_wants_to_scan) startListening();
 					}
 
 					discover(peripheral, onSuccessDiscovery, onFailure);
@@ -211,7 +224,7 @@ var patchBLE = {
 				setTimeout(function(){
 
 					function linksSuccess(){
-						console.log('read all links: '+periph.uuid);
+						// console.log('read all links: '+periph.uuid);
 						// patchBLE.disconnect(periph.uuid);
 					}
 
@@ -248,6 +261,11 @@ var patchBLE = {
 			syncInterface();
 		}
 		else console.log('error erasing '+uuid+': was not it scene');
+
+		// if the user wants to scan, restart scanning to get fresh advertisements
+		if(user_wants_to_scan) {
+			startListening();
+		}
 	},
 
 	////////////
@@ -285,7 +303,7 @@ var patchBLE = {
 			};
 
 			function disconnectSuccess(data){
-				console.log(data.status+': '+data.address);
+				// console.log(data.status+': '+data.address);
 				if(data && data.status==='disconnecting') {
 				}
 				else if(data && data.status==='disconnected') {
@@ -341,10 +359,10 @@ var patchBLE = {
 
 			function reconnectSuccess(data){
 				if(data && data.status==='connecting') {
-					console.log('connecting to '+uuid);
+					// console.log('connecting to '+uuid);
 				}
 				else if(data && data.status==='connected') {
-					console.log('connected to '+uuid);
+					// console.log('connected to '+uuid);
 
 					// tell the interface we're connected
 					patchBLE.scene[uuid].patchbay.connected = true;
@@ -379,12 +397,12 @@ var patchBLE = {
 	////////////;
 	////////////
 
-	'death_interval' : 10000, // minimum death interval
-	'death_random_shake' : 10000, // randomized difference between death intervals
+	'death_interval' : 30000, // minimum death interval
+	'death_random_shake' : 30000, // randomized difference between death intervals
 
 	'doom' : function (uuid) {
 
-		console.log('dooming: '+uuid);
+		// console.log('dooming: '+uuid);
 
 		var self = patchBLE;
 
@@ -394,18 +412,18 @@ var patchBLE = {
 				var thisUUID = uuid;
 				return function(){
 
-					console.log('testing: '+uuid);
+					// console.log('testing: '+uuid);
 
 					patchBLE.connect(thisUUID,
 						function(){
 							// success
-							console.log('saved: '+uuid);
+							// console.log('saved: '+uuid);
 							patchBLE.doom(thisUUID);
 							patchBLE.disconnect(thisUUID);
 						},
 						function(){
 							// error
-							console.log('erasing: '+uuid);
+							// console.log('erasing: '+uuid);
 							patchBLE.disconnect(thisUUID);
 							patchBLE.erase(thisUUID);
 						});
@@ -445,7 +463,7 @@ var patchBLE = {
 
 	'immortal' : function (uuid) {
 
-		console.log('immortal: '+uuid);
+		// console.log('immortal: '+uuid);
 
 		var self = patchBLE;
 
@@ -527,7 +545,8 @@ var patchBLE = {
 
 					function readError(error){
 						console.log('error reading: '+uuid+' @ index: '+index);
-						console.log(error);
+						if(error) console.log(error);
+						onDisconnect(uuid);
 						if(onFailure && typeof onFailure==='function') onFailure();
 					}
 
@@ -579,7 +598,8 @@ var patchBLE = {
 
 						if(data && data.status==='written') {
 
-							console.log(data.status+': '+uuid);
+							// console.log(data.status+': '+uuid);
+
 							// we're done
 							syncInterface();
 
@@ -595,7 +615,8 @@ var patchBLE = {
 
 					function writeError(error){
 						console.log('error writing: '+uuid+' @ index: '+index);
-						console.log(error);
+						if(error) console.log(error);
+						onDisconnect(uuid);
 						if(onFailure && typeof onFailure==='function') onFailure();
 					}
 
@@ -678,9 +699,9 @@ var patchBLE = {
 							}
 						}
 
-						function charError(data) {
+						function charError(error) {
 							console.log('error reading characteristics');
-							console.log(data);
+							if(error) console.log(error);
 							if(onFailure && typeof onFailure==='function') onFailure();
 						}
 
@@ -700,9 +721,9 @@ var patchBLE = {
 					}
 				}
 
-				function serviceError(data) {
+				function serviceError(error) {
 					console.log('error reading services');
-					console.log(data);
+					if(error) console.log(error);
 					if(onFailure && typeof onFailure==='function') onFailure();
 				}
 
@@ -758,17 +779,21 @@ function onDisconnect(uuid, shouldClose) {
 			}
 		}
 		else {
-			console.log('closing: '+uuid);
+			// console.log('closing: '+uuid);
 
 			function closeSucces(data){
 				if(data && data.status==='closed') {
-					console.log('successfully closed '+uuid);
+
+					// console.log('successfully closed '+uuid);
 
 					// erase it from memory
 					// so that we don't call .reconnect() inside discovery
 					if(alreadyConnected[uuid]){
 						delete alreadyConnected[uuid];
 					}
+
+					// restart listening so we can regain it if it's still around
+					startListening();
 				}
 			}
 
@@ -795,7 +820,7 @@ function onDiscoveryDisconnect(discover_success, onSuccess, onFailure) {
 
 	isDiscoveringUUID = undefined; // reset flag
 
-	// aler the interface
+	// alert the interface
 	updateDiscoveryIcon(false);
 
 	// if it's ended successfully
@@ -828,7 +853,7 @@ var alreadyConnected = {};
 
 function discover (_p, onSuccess, onFailure) {
 
-	console.log('discovering: '+_p.uuid);
+	// console.log('discovering: '+_p.uuid);
 
 	isDiscoveringUUID = _p.uuid;
 
@@ -888,14 +913,16 @@ function discover (_p, onSuccess, onFailure) {
 
 	function connectToIt() {
 
-		console.log('attempting connection: '+isDiscoveringUUID);
+		// console.log('attempting connection: '+isDiscoveringUUID);
 
 		var connectParams = {
 			'address' : isDiscoveringUUID
 		};
 
 		function connectSucces(data) {
-			console.log(data.status+': '+isDiscoveringUUID);
+
+			// console.log(data.status+': '+isDiscoveringUUID);
+
 			if(data && data.status==='connecting') {
 			}
 			else if(data && data.status==='connected') {
@@ -909,10 +936,11 @@ function discover (_p, onSuccess, onFailure) {
 			}
 		}
 
-		function connectError(data) {
+		function connectError(error) {
 			// retry connection a few times before quitting
 			currentlyConnected = false;
-			console.log('error connecting:'+error);
+			console.log('error connecting:');
+			if(error) console.log(error);
 			connectCount++;
 			if(connectCount<5) {
 				setTimeout(connectToIt,10);
@@ -1005,7 +1033,8 @@ function discover (_p, onSuccess, onFailure) {
 		_p.patchbay.input = [];
 		_p.patchbay.output = [];
 
-		function onServicesError(data) {
+		function onServicesError(error) {
+			if(error) console.log(error);
 			finishDiscovery(false);
 		}
 
@@ -1015,8 +1044,7 @@ function discover (_p, onSuccess, onFailure) {
 
 				//if a service returned, then that's our service
 				if(!thisServiceArray.length) {
-					if(error) console.log(error);
-					else console.log('found no services!');
+					console.log('found no services!');
 					finishDiscovery(false);
 				}
 				else {
@@ -1187,8 +1215,9 @@ function discover (_p, onSuccess, onFailure) {
 						}
 					}
 
-					function onReadError(data) {
+					function onReadError(error) {
 						console.log('error reading char '+nameChar.uuid+' from service '+thisPort.uuid);
+						if(error) console.log(error);
 						readNextNameChar(_portsArray);
 					}
 

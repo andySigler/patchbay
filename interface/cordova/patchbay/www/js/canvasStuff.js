@@ -292,7 +292,6 @@ function updateNodes(scene){
 		if(outCircle.arcs[i].uuid!=='fake'){
 			var stillReal = false;
 			for(var n in scene){
-				console.log(scene[n].patchbay.uuid);
 				if(scene[n].patchbay.uuid===outCircle.arcs[i].uuid){
 					var stillReal = true;
 					scene[n].patchbay.represented = true;
@@ -340,10 +339,24 @@ function updateNodes(scene){
 //////////////
 
 function eraseNodeFromConnections(id){
+	console.log('calling erasing links for '+id);
 	for(var n in allConnections){
-		var portIDs = n.split('__')[0].split('/');
-		if(portIDs[0]==id || portIDs[1]==id){
-			delete allConnections[n];
+		// var portIDs = n.split('__')[0].split('/');
+		// if(portIDs[0]==id || portIDs[1]==id){
+		// 	console.log('deleting connections');
+		// 	delete allConnections[n];
+		// }
+
+		var thisLink = allConnections[n];
+		if(thisLink) {
+			if(thisLink.outPort && thisLink.outPort.parent && thisLink.outPort.parent.id==id) {
+				console.log('deleting connection');
+				delete allConnections[n];
+			} 
+			else if(thisLink.inPort && thisLink.inPort.parent && thisLink.inPort.parent.id==id) {
+				console.log('deleting connection');
+				delete allConnections[n];
+			} 
 		}
 	}
 }

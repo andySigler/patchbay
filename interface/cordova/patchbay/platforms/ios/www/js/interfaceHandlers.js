@@ -2,17 +2,17 @@
 ////////////////////////////////////
 ////////////////////////////////////
 
+var user_wants_to_scan = false;
+
 function updateScanButton(state) {
 	var butt = document.getElementById('scanButton');
 	butt.currentState = state ? true : false;
 
 	if(butt.currentState) {
-		butt.style.backgroundColor = 'rgb(100,255,100)';
-		//butt.innerHTML = 'Scan ON';
+		butt.style.color = 'white'; // text white means we're scanning
 	}
 	else {
-		butt.style.backgroundColor = 'rgb(176,176,176)';
-		//butt.innerHTML = 'Scan OFF';
+		butt.style.color = 'rgb(39,39,39)'; // text grey means we're scanning
 	}
 }
 
@@ -34,8 +34,21 @@ function setupUI(){
 	var hammerTime = Hammer(butt);
 	hammerTime.on('touch',function(event){
 
-		if(!butt.currentState) patchBLE.startListening();
-		else patchBLE.stopListening();
+		// flip the state of what the user wants
+		user_wants_to_scan = !user_wants_to_scan;
+
+		if(user_wants_to_scan) {
+			butt.style.backgroundColor = 'rgb(100,255,100)'; // green means user wants to scan
+			if(!butt.currentState) { // if BLE isn't scanning, then start scanning
+				patchBLE.startListening();
+			}
+		}
+		else {
+			butt.style.backgroundColor = 'rgb(176,176,176)'; // grey means user does not want to scan
+			if(butt.currentState) { // if BLE is scanning, stop scanning
+				patchBLE.stopListening();
+			}
+		}
 	});
 }
 
@@ -65,6 +78,7 @@ function flushScene() {
 //////////////
 
 function readLinks(uuid) {
+	console.log('reading all links from: '+uuid);
 	patchBLE.readlinks(uuid,'all');
 }
 
@@ -124,20 +138,22 @@ function updateConnections(scene){
 		allConnections[c].exists = false;
 	}
 
-	for(var outputUUID in scene) {
+	for(var UUID in scene) {
 
-		var outputID = scene[outputUUID].patchbay.id;
+		var outputID = scene[UUID].patchbay.id;
 
+		// loop through each Arc to find the matching interface node
 		for(var i=0;i<outCircle.arcs.length;i++) {
 
-			// loop through each Arc (node)
+			// this node in the GUI is the same node in the scene
 			if(outCircle.arcs[i].id===outputID) {
 
-				var outputArray = scene[outputUUID].patchbay.output;
+				// get the outputs from this node in the scene
+				var outputArray = scene[UUID].patchbay.output;
 
-				// loop through all Output ports
 				for(var outputIndex=0;outputIndex<outputArray.length;outputIndex++) {
 
+					// get the links we found through BLE
 					var portLinks = outputArray[outputIndex].links;
 
 					if(portLinks) {
@@ -148,6 +164,7 @@ function updateConnections(scene){
 							var inputID = portLinks[l].id;
 							var inputIndex = portLinks[l].index;
 
+							// create a new link, or save an already existing link
 							testConnectionExistence(outputID,inputID,inputIndex,outputIndex);
 						}
 					}
@@ -159,6 +176,7 @@ function updateConnections(scene){
 	}
 
 
+	// erase all links that weren't updated in the above loop
 	for(var c in allConnections){
 		if(!allConnections[c].exists){
 			delete allConnections[c];
@@ -174,25 +192,25 @@ function updateConnections(scene){
 function testConnectionExistence(outputID,inputID,inputIndex,outputIndex){
 	var tempName = Number(outputID)+'/'+Number(inputID)+'__'+Number(inputIndex)+'/'+Number(outputIndex);
 	
-	if(!allConnections[tempName]){
-		var outPort = undefined;
-		var inPort = undefined;
-		for(var h=0;h<outCircle.arcs.length;h++){
+	// try to create it, but only if both nodes exist on the GUI
+	var outPort = undefined;
+	var inPort = undefined;
 
-			if(outCircle.arcs[h].id==outputID){
-				outPort = outCircle.arcs[h].ports[outputIndex];
-			}
-			if(inCircle.arcs[h].id==inputID){
-				inPort = inCircle.arcs[h].ports[inputIndex];
-			}
-			if(outPort && inPort){
-				allConnections[tempName] = new Cord(context,outPort,inPort,tempName);
-				break;
-			}
+	for(var h=0;h<outCircle.arcs.length;h++){
+
+		if(outCircle.arcs[h].id==outputID){
+			outPort = outCircle.arcs[h].ports[outputIndex];
 		}
-	}
-	else{
-		allConnections[tempName].exists = true;
+		if(inCircle.arcs[h].id==inputID){
+			inPort = inCircle.arcs[h].ports[inputIndex];
+		}
+		if(outPort && inPort){
+
+			if(!allConnections[tempName]){
+				allConnections[tempName] = new Cord(context,outPort,inPort,tempName);
+			}
+			allConnections[tempName].exists = true;
+		}
 	}
 }
 
