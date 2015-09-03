@@ -13,7 +13,9 @@ function beginBLE(){
 
 			setInterval(function(){
 				if(user_wants_to_scan && patchBLE.isScanning && !isDiscoveringUUID) {
-					startListening();
+					stopListening(function(){
+						startListening(undefined,true);
+					},true);
 				}
 			},5000);
 		}
@@ -33,46 +35,47 @@ function beginBLE(){
 
 var restartListening;
 
-function startListening () {
+function startListening (onSuccess,doNotDoom) {
 
-	if(BLE_IS_ENABLED) {
+	if(user_wants_to_scan) {
 
-		if(!patchBLE.isScanning) {
+		if(BLE_IS_ENABLED) {
 
-			function onScanSuccess (data) {
-				if(data && data.status==='scanStarted') {
+			if(!patchBLE.isScanning) {
 
-					patchBLE.isScanning = true;
-					patchBLE.doom('all');
+				function onScanSuccess (data) {
+					if(data && data.status==='scanStarted') {
 
-					// tell the front end that we're scanning
-					updateScanButton(true);
+						patchBLE.isScanning = true;
+						if(!doNotDoom) patchBLE.doom('all');
+
+						// tell the front end that we're scanning
+						updateScanButton(true);
+
+						if(onSuccess && typeof onSuccess==='function') onSuccess();
+					}
+					else if(data && data.status==='scanResult') {
+						// we found a new node
+						data.uuid = data.address;  // this library calls UUID an 'address'
+						onScannedPeripheral(data);
+					}
+					else console.log(data);
 				}
-				else if(data && data.status==='scanResult') {
-					// we found a new node
-					data.uuid = data.address;  // this library calls UUID an 'address'
-					onScannedPeripheral(data);
+
+				function onScannError (data) {
+					console.log('error starting scan');
+					console.log(data);
 				}
-				else console.log(data);
-			}
 
-			function onScannError (data) {
-				console.log('error starting scan');
-				console.log(data);
-			}
+				console.log('calling START SCAN');
 
-			bluetoothle.startScan( onScanSuccess , onScannError);
+				bluetoothle.startScan( onScanSuccess , onScannError);
+			}
+			else if(onSuccess && typeof onSuccess==='function') onSuccess();
 		}
 		else {
-			console.log('already scanning, restarting...');
-			// we're already scanning so restart it up again
-			stopListening();
-			clearTimeout(restartListening);
-			restartListening = setTimeout(startListening,100);
+			console.log('BLE not enabled')
 		}
-	}
-	else {
-		console.log('BLE not enabled')
 	}
 }
 
@@ -80,17 +83,19 @@ function startListening () {
 ////////////
 ////////////
 
-function stopListening () {
+function stopListening (onSuccess,doNotImmortalize) {
 	if(patchBLE.isScanning) {
 
 		function successStopping (data) {
 			if(data && data.status==='scanStopped') {
 
 				patchBLE.isScanning = false;
-				patchBLE.immortal('all');
+				if(!doNotImmortalize) patchBLE.immortal('all');
 
 				// tell the front end that we're scanning
 				updateScanButton(false);
+
+				if(onSuccess && typeof onSuccess==='function') onSuccess();
 			}
 		}
 
@@ -99,8 +104,11 @@ function stopListening () {
 			console.log('there was an error stopping the Scan');
 		}
 
+		console.log('calling STOP SCAN');
+
 		bluetoothle.stopScan( successStopping , errorStopping );
 	}
+	else if(onSuccess && typeof onSuccess==='function') onSuccess();
 }
 
 /////////////////////////////////
@@ -111,7 +119,7 @@ var isDiscoveringUUID = undefined;
 
 function onScannedPeripheral (peripheral) {
 
-	if(peripheral.name) console.log('\t\t'+peripheral.name);
+	console.log('\t\t'+peripheral.name);
 
 	// only check out the new peripheral if we're ready
 	// aka, if we're supposed to be scanning, and if we're not currently
@@ -137,22 +145,23 @@ function onScannedPeripheral (peripheral) {
 
 					isDiscoveringUUID = peripheral.uuid;
 
-					stopListening();
+					stopListening(function(){
 
-					// this is called if the periphal was identified as a Patchbay node
-					var onSuccessDiscovery = function() {
+						// this is called if the periphal was identified as a Patchbay node
+						var onSuccessDiscovery = function() {
 
-						// now add it to our global object of patchbay nodes
-						patchBLE.add(peripheral);
-						if(user_wants_to_scan) startListening();
-					}
+							// now add it to our global object of patchbay nodes
+							patchBLE.add(peripheral);
+							startListening();
+						}
 
-					// if it fails, ignore it for now on
-					var onFailure = function(){
-						if(user_wants_to_scan) startListening();
-					}
+						// if it fails, ignore it for now on
+						var onFailure = function(){
+							startListening();
+						}
 
-					discover(peripheral, onSuccessDiscovery, onFailure);
+						discover(peripheral, onSuccessDiscovery, onFailure);
+					});
 				}
 
 				// else, we already stored it, so update it's heartbeat
@@ -189,8 +198,6 @@ function tryResettingTheName(uuid) {
 		patchBLE.ignore_peripherals[uuid] = true;
 	}
 	else {
-
-		stopListening();
 
 		alreadTriedResetting[uuid] = true;
 
@@ -266,7 +273,7 @@ function tryResettingTheName(uuid) {
 			bluetoothle.connect(connectSuccess, connectError, connectParams);
 		}
 
-		connectToIt();
+		stopListening(connectToIt);
 	}
 }
 
@@ -496,12 +503,12 @@ var patchBLE = {
 	////////////;
 	////////////
 
-	'death_interval' : 30000, // minimum death interval
-	'death_random_shake' : 30000, // randomized difference between death intervals
+	'death_interval' : 8000, // minimum death interval
+	'death_random_shake' : 2000, // randomized difference between death intervals
 
 	'doom' : function (uuid) {
 
-		// console.log('dooming: '+uuid);
+		console.log('dooming: '+uuid);
 
 		var self = patchBLE;
 
@@ -511,7 +518,7 @@ var patchBLE = {
 				var thisUUID = uuid;
 				return function(){
 
-					// console.log('testing: '+uuid);
+					console.log('testing: '+uuid);
 
 					patchBLE.connect(thisUUID,
 						function(){
