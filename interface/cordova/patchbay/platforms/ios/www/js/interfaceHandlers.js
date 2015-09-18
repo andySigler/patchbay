@@ -38,13 +38,15 @@ function setupUI(){
 		user_wants_to_scan = !user_wants_to_scan;
 
 		if(user_wants_to_scan) {
-			butt.style.backgroundColor = 'rgb(100,255,100)'; // green means user wants to scan
+			//butt.style.backgroundColor = 'rgb(100,255,100)'; // green means user wants to scan
+			butt.innerHTML = '<h3>Scan ON</h3>';
 			if(!butt.currentState) { // if BLE isn't scanning, then start scanning
 				patchBLE.startListening();
 			}
 		}
 		else {
-			butt.style.backgroundColor = 'rgb(176,176,176)'; // grey means user does not want to scan
+			//butt.style.backgroundColor = 'rgb(176,176,176)'; // grey means user does not want to scan
+			butt.innerHTML = '<h3>Scan OFF</h3>';
 			if(butt.currentState) { // if BLE is scanning, stop scanning
 				patchBLE.stopListening();
 			}

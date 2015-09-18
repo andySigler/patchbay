@@ -70,6 +70,16 @@ canvas{
 	right:5px;
 }
 
+#title{
+	position: relative;
+	display: block;
+
+	text-align: right;
+
+	font-size: 4rem;
+	color: rgb(176,176,176);
+}
+
 #scanButton {
 	position: relative;
 	/*width:10%;*/
@@ -77,18 +87,23 @@ canvas{
 	text-align: center;
 	color:rgb(39,39,39);
 	cursor:pointer;
-	background-color: rgb(176,176,176);
+	background-color: rgb(79,79,79);
+
+	width:100px;
 
 	padding:1px 20px 1px 20px;
 	margin:0;
+	margin-top:20px;
+	margin-left:115px;
 	border-radius: 3px;
 }
 
 #discovery {
 	position: relative;
 	display: inline-block;
-	width:100%;
+	width:100px;
 	text-align: right;
 	color:white;
+	margin-left:140px;
 	display:none;
 }

@@ -77,7 +77,7 @@ function setupCanvas(){
 		mouse.dragEvent(pos.x,pos.y,true);
 		mouse.touchEvent();
 
-		flushTimeout = setTimeout(flushScene, 3000); // flush the scene after holding screen
+		flushTimeout = setTimeout(flushScene, 1500); // flush the scene after holding screen
 	});
 	var didTap = false;
 	hammerTime.on('tap',function(event){
