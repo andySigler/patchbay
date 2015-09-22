@@ -79,9 +79,38 @@ function flushScene() {
 //////////////
 //////////////
 
+var waitSignTimeout = undefined;
+
+function showWaitSign(){
+	console.log('\n\nSHOWING THE WAIT SIGN\n\n');
+
+	waitSignTimeout = setTimeout(removeWaitSign,2000);
+
+	document.getElementById('waitSign').style.display = 'block';
+}
+
+//////////////
+//////////////
+//////////////
+
+function removeWaitSign(){
+	console.log('\n\nREMOVING THE WAIT SIGN\n\n');
+
+	clearTimeout(waitSignTimeout);
+
+	document.getElementById('waitSign').style.display = 'none';
+}
+
+//////////////
+//////////////
+//////////////
+
 function readLinks(uuid) {
 	console.log('reading all links from: '+uuid);
-	patchBLE.readlinks(uuid,'all');
+
+	showWaitSign();
+
+	patchBLE.readlinks(uuid,'all',removeWaitSign,removeWaitSign);
 }
 
 ////////////
@@ -118,7 +147,9 @@ function sendRoute(outputUUID, inputUUID, inputIndex, outputIndex, isAlive){
 			'isAlive' : isAlive,
 		};
 
-		patchBLE.writelink(outputUUID, Number(outputIndex), linkData);
+		showWaitSign();
+
+		patchBLE.writelink(outputUUID, Number(outputIndex), linkData, removeWaitSign, removeWaitSign);
 
 	    var tempName = Number(outputID)+'/'+Number(inputID)+'__'+Number(inputIndex)+'/'+Number(outputIndex);
 

@@ -80,6 +80,63 @@ canvas{
 	color: rgb(176,176,176);
 }
 
+#waitSign{
+
+	position:absolute;
+	top:32%;
+	left:36%;
+
+	width:28%;
+	height:35%;
+	text-align: center;
+
+	background-color: rgba(0,0,0,0.2);
+	/*border: 4px solid white;*/
+	color:white;
+
+	border-radius: 10px;
+
+	font-size: 4rem;
+
+	display:none;
+}
+
+#load_wheel{
+	width:70%;
+	margin-top: 12%;
+
+	transform: translate(-50%,-50%);
+    transform-origin: 50% 50%;
+    animation: rotateWheel 2s linear infinite;
+
+    -webkit-transform: translate(-50%,-50%);
+    -webkit-transform-origin: 50% 50%;
+    -webkit-animation: rotateWheel 2s linear infinite;
+
+    -moz-transform: translate(-50%,-50%);
+    -moz-transform-origin: 50% 50%;
+    -moz-animation: rotateWheel 2s linear infinite;
+
+    -ms-transform: translate(-50%,-50%);
+    -ms-transform-origin: 50% 50%;
+    -ms-animation: rotateWheel 2s linear infinite;
+}
+
+@keyframes rotateWheel {
+    from {transform: rotate(0deg);}
+    to {transform: rotate(360deg);}
+}
+
+@-webkit-keyframes rotateWheel {
+    from {-webkit-transform: rotate(0deg);}
+    to {-webkit-transform: rotate(360deg);}
+}
+
+@-moz-keyframes rotateWheel {
+    from {-moz-transform: rotate(0deg);}
+    to {-moz-transform: rotate(360deg);}
+}
+
 #scanButton {
 	position: relative;
 	/*width:10%;*/

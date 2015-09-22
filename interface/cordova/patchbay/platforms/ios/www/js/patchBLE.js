@@ -455,6 +455,7 @@ var patchBLE = {
 			setTimeout(function(){
 				if(!doNotErase) {
 					console.log('connection timed out, erasing: '+uuid);
+					if(onFailure && typeof onFailure==='function') onFailure();
 					patchBLE.erase(uuid);
 				}
 			},2000);
@@ -710,12 +711,14 @@ var patchBLE = {
 							syncInterface();
 
 							setTimeout(function(){
-								patchBLE.readlinks(uuid,index,function(){
-									patchBLE.disconnect(uuid);
-								});
-							},400);
 
-							if(onSuccess && typeof onSuccess==='function') onSuccess();
+								function onDone(){
+									if(onSuccess && typeof onSuccess==='function') onSuccess();
+									patchBLE.disconnect(uuid);
+								};
+
+								patchBLE.readlinks(uuid,index,onDone,onDone);
+							},500);
 						}
 					}
 
