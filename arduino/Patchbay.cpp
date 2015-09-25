@@ -50,7 +50,7 @@ Patchbay::Patchbay(byte _id, char *_name,byte _totalInputs,byte _totalOutputs,by
 ///////////
 ///////////
 
-void Patchbay::begin() {
+void Patchbay::begin(boolean advertise) {
 
 	// init all our variables
 
@@ -80,7 +80,7 @@ void Patchbay::begin() {
 	delay(200); // arbitrary delay to help SPI settle after boot
 
 	// set device name and all Services needed
-	setupBLE();
+	setupBLE(advertise);
 
 	// start the SPI communication with our RFM69
 	radio.initialize(RF69_915MHZ,patchID,patchNetwork);
@@ -101,9 +101,9 @@ void Patchbay::begin() {
 ///////////
 
 boolean Patchbay::update(){
-	
-	updateBLE();
 
+	updateBLE();
+	
 	return updateRFM69(); // returns TRUE if an Output's value has changed
 }
 
@@ -286,7 +286,7 @@ void Patchbay::readRadio(){
 				values[i] = (byte) radio.DATA[i];
 			}
 
-			// if there is a message, turn it into an ID and array, and pass it to each OUTPUT
+			// if there is a message, turn it into an ID and array, and pass it to every OUTPUT
 			for(byte i=0;i<totalOutputs;i++){
 				// newMessage loops through that Port's Links, writing the value if they match IDs
 				theOutputs[i].newMessage(senderID,totalValues,values);
@@ -412,7 +412,7 @@ byte Patchbay::outputRead(byte _outIndex){
 
 const char __letters__[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-void Patchbay::setupBLE(){
+void Patchbay::setupBLE(boolean advertise){
 
 	// below are configuration settings for the BLE module
 
@@ -473,11 +473,14 @@ void Patchbay::setupBLE(){
 
 	setupServices();
 
-	// turn off Advertisements!!
-	if(!BLE_print_with_OK(F("AT+GAPSTARTADV"))) {
-		#if defined(Patchbay_verbose)
-		Serial.println(F("Couldn't restart advertising..."));
-		#endif
+	if(advertise) {
+
+		// turn on Advertisements!!
+		if(!BLE_print_with_OK(F("AT+GAPSTARTADV"))) {
+			#if defined(Patchbay_verbose)
+			Serial.println(F("Couldn't restart advertising..."));
+			#endif
+		}
 	}
 }
 

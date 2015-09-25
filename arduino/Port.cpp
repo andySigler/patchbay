@@ -159,15 +159,13 @@ void Port::readLinks(){
 ///////////
 ///////////
 
-// looping through all links on a new radio message feels inefficient
-// we'll see if this plays a part in any sort of latency...
+// looping through all links on a new radio message
+// feels inefficient, we'll see if this plays a part in any sort of latency...
 
 void Port::newMessage(byte ID,byte totalValues,byte *values){
 	for(byte i=0;i<totalLinks;i++){
 		if(theLinks[i].isAlive()){
-			if(theLinks[i].testMessage(ID,totalValues,values)){
-				break;
-			}
+			theLinks[i].testMessage(ID,totalValues,values);
 		}
 		else{
 			break; // because alive links are at the front of the array

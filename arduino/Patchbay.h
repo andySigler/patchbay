@@ -19,7 +19,7 @@
 ///////////
 
 // for debugging (because keeping serial intact seems to break SPI???)
-#define Patchbay_verbose true
+// #define Patchbay_verbose true
 
 ///////////
 ///////////
@@ -41,7 +41,7 @@ class Patchbay{
     // initialize with a project ID, project name, input count, and output count
   	Patchbay(byte _id, char *_name,byte _totalInputs=0,byte _totalOutputs=0,byte _network=99,byte _maxLinks=5);
 
-    void begin();
+    void begin(boolean advertise=true);
 
     // call as often as possible
   	boolean update();
@@ -72,7 +72,7 @@ class Patchbay{
     boolean updateRFM69();
 
     // functions for helping create the services
-    void setupBLE();
+    void setupBLE(boolean advertise);
     void setupServices();
     void updateBLE();
     void createBLEService(boolean isOutput, byte index);

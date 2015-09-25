@@ -75,6 +75,8 @@ void Link::isAlive(boolean _state){
 ///////////
 ///////////
 
+// if this Link uses the passed ID, then pull the byte from the INDEX
+
 boolean Link::testMessage(byte ID, byte totalValues, byte *values) {
 	if(HARDWARE_ADDRESS==ID && INPUT_INDEX<totalValues){
 		writeValue(values[INPUT_INDEX]); // write the new message to a Link
@@ -133,7 +135,9 @@ void Link::clone(Link tempLink){
 // if it's true, the flag is set to false
 
 boolean Link::hasChanged(){
-	return didChange;
+	boolean oldValue = didChange;
+	didChange = false;
+	return oldValue;
 };
 
 ///////////
