@@ -116,7 +116,8 @@ if( myPatch.update() ) {						// update all radio communications
 
 			Serial.print("Output ");			// use the new value
 			Serial.print(i);
-			Serial.println(" has changed");
+			Serial.print(" has changed to ");
+			Serial.println( myPatch.outputRead(i) );
 		}
 	}
 }
