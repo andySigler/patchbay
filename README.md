@@ -36,11 +36,11 @@ All `inputs` and `outputs` are stored in two arrays for each type, and each is r
 
 ####Setup
 
-Once initialzed at the top of your sketch, simple call `.setup()` inside of the Arduino `setup()` function. This function will begin SPI communication with both radios, set your network ID, as well as setup your device's custom GATT profile.
+Once initialzed at the top of your sketch, simple call `.begin()` inside of the Arduino `setup()` function. This function will begin SPI communication with both radios, set your network ID, as well as setup your device's custom GATT profile.
 
 ```arduino
 void setup(){
-	myPatch.setup();
+	myPatch.begin();
 }
 ```
 
