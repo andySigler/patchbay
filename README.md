@@ -71,9 +71,7 @@ void loop(){
 
 ```arduino
 void loop(){
-	boolean outputs_changed = myPatch.update();
-
-	if(outputs_changed) {
+	if(myPatch.update()) {
 		// update your sketch as necessary
 	}
 }
