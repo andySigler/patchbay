@@ -1,6 +1,6 @@
-#Patchbay
+# Patchbay
 
-##A Wireless Framework for Musical Instruments and Toys
+## A Wireless Framework for Musical Instruments and Toys
 
 [patchbay.io](http://patchbay.io)
 
@@ -8,9 +8,9 @@ This was built so that I could <b>very</b> easily create peer-to-peer connection
 
 Originally developed for my [ITP '14 masters thesis](https://github.com/andysigler/patchbay-thesis-2014), I have rebuilt it from the ground up during my residency at ITP this past year.
 
-##Using Patchbay
+## Using Patchbay
 
-####Wiring
+#### Wiring
 
 The Patchbay breakout board connects over hardware SPI, which are pins `D13`, `D12`, and `D11` on the Arduino Uno. The breakout also uses pins `D10`, `D9`, `D8`, `D7`, and `D2` for SPI handshaking with both radios, and one additional reset pin for the nRF51822.
 
@@ -18,7 +18,7 @@ On the Arduino Uno, this leaves digital pins `D0`, `D1`, `D3`, `D4`, `D5`, and `
 
 ![Patchbay Wiring](/hardware/patchbay_wiring_new.jpg?raw=true "Patchbay Wiring")
 
-####Initialize
+#### Initialize
 
 Include the Patchbay library in your Arduino sketch, and initialize it with the mesh ID, the name of your device, and the number of physical `inputs` and `outputs` you would like it to expose.
 
@@ -34,7 +34,7 @@ Patchbay myPatch( ID , "Device-Name" , total_inputs , total_outputs );
 
 All `inputs` and `outputs` are stored in two arrays for each type, and each is referenced through the API by their index. This means that if you have three `inputs`, the first has an identifier of `0`, the second `1`, and so on.
 
-####Setup
+#### Setup
 
 Once initialzed at the top of your sketch, simple call `.begin()` inside of the Arduino `setup()` function. This function will begin SPI communication with both radios, set your network ID, as well as setup your device's custom GATT profile.
 
@@ -44,7 +44,7 @@ void setup(){
 }
 ```
 
-####Naming an `input` or `output`
+#### Naming an `input` or `output`
 
 `inputs` and `outputs` can be assigned names to show up in the Patchbay interface. These are strings or char arrays of less than 20 characters. Names should be assigned once inside the Arduino `setup()` function.
 
@@ -55,7 +55,7 @@ myPatch.inputName( 1 , "knob-2");
 myPatch.outputName( 0 , "LED");
 ```
 
-####Update
+#### Update
 
 Patchbay relies on very fast communication and update cycles with the breakout board. `.update()` handles all of this for you, checking for any BLE connections and updates, as well sending and receiving any necessary data over the RFm69.
 
@@ -77,7 +77,7 @@ void loop(){
 }
 ```
 
-####Write to `inputs`
+#### Write to `inputs`
 
 Patchbay `inputs` can be physical inputs like sensors, and must be represented as an integer between `0` and `255`.
 
@@ -95,7 +95,7 @@ myPatch.inputWrite( 1 , knob_2_value );
 myPatch.update();								// send the values wireless
 ```
 
-####Read from `outputs`
+#### Read from `outputs`
 
 Patchbay `outputs` can be physical outputs like lights or motors, and must be represented as an integer between `0` and `255`.
 
