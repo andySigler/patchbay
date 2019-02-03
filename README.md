@@ -123,7 +123,7 @@ if( myPatch.update() ) {						// update all radio communications
 }
 ```
 
-##Shoulders of Giants
+## Shoulders of Giants
 
 I have developed Patchbay so far on my own in my free time, and none of this would have been possible without the wonderful open-source software and hardware from the following people.
 
